@@ -1,244 +1,181 @@
 ---
 name: xian-node
-description: Set up and manage Xian blockchain nodes. Use when deploying a Xian node to join mainnet/testnet, creating a new Xian network, or managing running nodes. Covers Docker-based setup via xian-stack, CometBFT configuration, and node monitoring.
+description: Operate current Xian nodes with xian-tech-cli and xian-stack. Use when joining canonical networks, creating private networks, running validators or service nodes, and inspecting runtime health.
 ---
 
 # Xian Node Skill
 
-Deploy and manage [Xian](https://xian.org) blockchain nodes — an L1 with native Python smart contracts on CometBFT.
+Use this skill for the current Xian operator flow.
+
+Important packaging detail:
+
+- install package: `xian-tech-cli`
+- command name: `xian`
+
+## Installation
+
+```bash
+pip install xian-tech-cli
+```
+
+## Core Model
+
+Xian node operations are split across:
+
+- `xian-cli` for operator workflows and node profiles
+- `xian-stack` for the runtime backend and Docker services
+- canonical network manifests for pinned release images and network metadata
+
+Default production posture:
+
+- canonical networks use manifest-pinned registry images
+- development/private networks can opt into `local_build`
 
 ## Quick Reference
 
-| Task | Command |
-|------|---------|
-| Join mainnet | `make setup && make core-build && make core-up && make init && make configure CONFIGURE_ARGS='--genesis-file-name genesis-mainnet.json --seed-node-address <seed> --copy-genesis'` |
-| Start node | `make core-shell` then `make up` inside container |
-| View logs | `pm2 logs --lines 100` (inside container) |
-| Stop node | `make down` (inside container) or `make core-down` (stop container) |
-| Check sync | `curl -s localhost:26657/status \| jq '.result.sync_info'` |
+```bash
+# Join a canonical network
+uv run xian network join validator-1 --network mainnet --moniker "validator-1"
 
-## Setup: Join Existing Network
+# Start and inspect
+uv run xian node start validator-1
+uv run xian node status validator-1
+uv run xian node endpoints validator-1
+uv run xian node health validator-1
 
-### 1. Clone and Build
+# Stop
+uv run xian node stop validator-1
+```
+
+## Join Mainnet or Testnet
+
+### Validator Example
 
 ```bash
-git clone https://github.com/xian-network/xian-stack.git
-cd xian-stack
-make setup CORE_BRANCH=mainnet CONTRACTING_BRANCH=mainnet
-make core-build
-make core-up
+uv run xian network join validator-1 \
+  --network mainnet \
+  --moniker "validator-1"
+
+uv run xian node start validator-1
+uv run xian node status validator-1
+uv run xian node endpoints validator-1
 ```
 
-### 2. Initialize CometBFT
+### Service Node Example
 
 ```bash
-make init
+uv run xian network join service-1 \
+  --network mainnet \
+  --moniker "service-1" \
+  --service-node \
+  --enable-dashboard \
+  --enable-monitoring
+
+uv run xian node start service-1
+uv run xian node health service-1
 ```
 
-### 3. Configure Node
+## Local Build Override
 
-**Mainnet:**
-```bash
-make configure CONFIGURE_ARGS='--moniker "my-node" --genesis-file-name "genesis-mainnet.json" --seed-node-address "c3861ffd16cf6708aef6683d3d0471b6dedb3116@152.53.18.220" --copy-genesis'
-```
-
-**Testnet:**
-```bash
-make configure CONFIGURE_ARGS='--moniker "my-node" --genesis-file-name "genesis-testnet.json" --seed-node-address "<testnet-seed>" --copy-genesis'
-```
-
-**Validator node** (add private key):
-```bash
-make configure CONFIGURE_ARGS='--moniker "my-validator" --genesis-file-name "genesis-mainnet.json" --validator-privkey "<your-privkey>" --seed-node-address "..." --copy-genesis'
-```
-
-**Service node** (with BDS - Blockchain Data Service):
-```bash
-make configure CONFIGURE_ARGS='--moniker "my-service" --genesis-file-name "genesis-mainnet.json" --seed-node-address "..." --copy-genesis --service-node'
-```
-
-### 4. Start Node
+Use this when you explicitly want the local checked-out repos instead of the
+published canonical image.
 
 ```bash
-make core-shell   # Enter container
-make up           # Start pm2 processes
-pm2 logs          # Watch sync progress
-exit              # Leave shell (node keeps running)
+uv run xian network join dev-validator \
+  --network mainnet \
+  --moniker "dev-validator" \
+  --node-image-mode local_build
 ```
 
-## Setup: Create New Network
-
-### 1. Build Stack
+## New Network / Private Network
 
 ```bash
-git clone https://github.com/xian-network/xian-stack.git
-cd xian-stack
-make setup CORE_BRANCH=mainnet CONTRACTING_BRANCH=mainnet
-make core-build
-make core-up
-make init
+uv run xian network create localnet-1 \
+  --chain-id xian-localnet-1 \
+  --moniker "bootstrap-1" \
+  --force
+
+uv run xian node start localnet-1
 ```
 
-### 2. Generate Validator Keys
+Use `xian network create` when you need a new private network definition rather
+than joining a canonical one.
 
-Inside container (`make core-shell`):
+## Optional Runtime Layers
+
+The node profile can enable:
+
+- `--service-node` for BDS/indexed reads
+- `--enable-dashboard` for the explorer/dashboard service
+- `--enable-monitoring` for Prometheus and Grafana
+- `--enable-intentkit` for the optional `xian-intentkit` sidecar stack
+
+Example:
 
 ```bash
-# Generate new validator key
-python -c "
-from nacl.signing import SigningKey
-import secrets
-sk = SigningKey(secrets.token_bytes(32))
-print(f'Private key: {sk.encode().hex()}')
-print(f'Public key:  {sk.verify_key.encode().hex()}')
-"
+uv run xian network join agent-node \
+  --network mainnet \
+  --service-node \
+  --enable-dashboard \
+  --enable-monitoring \
+  --enable-intentkit
 ```
 
-### 3. Create Genesis File
+## What `node status` Should Tell You
 
-Create `genesis.json` with initial validators and state. See `references/genesis-template.md`.
-
-### 4. Configure as Genesis Validator
+The current status flow is richer than a simple process check. It should be the
+first command you reach for.
 
 ```bash
-make configure CONFIGURE_ARGS='--moniker "genesis-validator" --genesis-file-name "genesis-custom.json" --validator-privkey "<privkey>"'
+uv run xian node status validator-1
 ```
 
-### 5. Start Network
+Expect it to surface:
+
+- profile/network identity
+- runtime/backend reachability
+- current image mode and image references
+- manifest-derived release provenance when present
+- dashboard / monitoring / intentkit reachability when enabled
+
+## Endpoints and Health
 
 ```bash
-make core-shell
-make up
+uv run xian node endpoints validator-1
+uv run xian node health validator-1
 ```
 
-Other nodes join using your node as seed.
+Use:
 
-## Node Management
+- `node endpoints` for local URLs
+- `node health` for machine-readable checks
+- `node status` for the operator summary
 
-### Inside Container Commands
+## Direct Stack Backend
 
-| Command | Description |
-|---------|-------------|
-| `make up` | Start xian + cometbft via pm2 |
-| `make down` | Stop all pm2 processes |
-| `make restart` | Restart node |
-| `make logs` | View pm2 logs |
-| `make wipe` | Clear node data (keeps config) |
-| `make dwu` | Down + wipe + init + up (full reset) |
-
-### Monitoring
-
-**Sync status:**
-```bash
-curl -s localhost:26657/status | jq '.result.sync_info'
-```
-
-**Response fields:**
-- `latest_block_height`: Current height
-- `catching_up`: `true` if still syncing
-- `earliest_block_height`: Lowest available block
-
-**Node info:**
-```bash
-curl -s localhost:26657/status | jq '.result.node_info'
-make node-id   # Get node ID for peering
-```
-
-**Validators:**
-```bash
-curl -s localhost:26657/validators | jq '.result.validators'
-```
-
-### Docker Commands
-
-| Command | Description |
-|---------|-------------|
-| `make core-up` | Start container |
-| `make core-down` | Stop container |
-| `make core-shell` | Enter container shell |
-| `make core-bds-up` | Start with BDS (PostgreSQL + GraphQL) |
-
-## Ports
-
-| Port | Service |
-|------|---------|
-| 26656 | P2P (peering) |
-| 26657 | RPC (queries) |
-| 26660 | Prometheus metrics |
-| 5000 | GraphQL (BDS only) |
-
-## Troubleshooting
-
-**Database lock error** (`resource temporarily unavailable`):
-```bash
-# Duplicate pm2 processes - clean up:
-pm2 delete all
-make up
-```
-
-**Sync stuck**:
-```bash
-# Check peer connections
-curl -s localhost:26657/net_info | jq '.result.n_peers'
-
-# Verify seed node is reachable
-make wipe
-make init
-# Re-run configure with correct seed
-```
-
-**Container not starting**:
-```bash
-make core-down
-make core-build --no-cache
-make core-up
-```
-
-## File Locations
-
-| Path | Contents |
-|------|----------|
-| `.cometbft/` | CometBFT data + config |
-| `.cometbft/config/genesis.json` | Network genesis |
-| `.cometbft/config/config.toml` | Node configuration |
-| `.cometbft/data/` | Blockchain data |
-| `xian-core/` | Xian ABCI application |
-| `xian-contracting/` | Python contracting engine |
-
-## Test Your Node
-
-After syncing, verify your node works with [xian-py](https://github.com/xian-network/xian-py):
+Use the raw backend only when you are working directly in `xian-stack` and need
+to bypass the higher-level CLI.
 
 ```bash
-pip install xian-py
+python3 ./scripts/backend.py start --no-service-node --no-dashboard --no-monitoring
+python3 ./scripts/backend.py status --no-service-node --no-dashboard --no-monitoring
+python3 ./scripts/backend.py endpoints --no-service-node --no-dashboard --no-monitoring
+python3 ./scripts/backend.py health --no-service-node --no-dashboard --no-monitoring
+python3 ./scripts/backend.py stop --no-service-node --no-dashboard --no-monitoring
 ```
 
-```python
-from xian_py import Xian, Wallet
+## Operational Guidance
 
-# Connect to your local node
-xian = Xian('http://localhost:26657')
-
-# Query balance
-balance = xian.get_balance('your_address')
-print(f"Balance: {balance}")
-
-# Get contract state
-state = xian.get_state('currency', 'balances', 'some_address')
-print(f"State: {state}")
-
-# Create wallet and send transaction
-wallet = Wallet()  # or Wallet('your_private_key')
-xian = Xian('http://localhost:26657', wallet=wallet)
-result = xian.send(amount=10, to_address='recipient_address')
-```
-
-For full SDK docs (contracts, HD wallets, async) — see [xian-py](https://github.com/xian-network/xian-py).
+- Prefer canonical manifest-backed images for real networks.
+- Use `local_build` only when you intentionally need unreleased local code.
+- Use service-node mode when you need BDS, GraphQL, explorers, or indexed bot
+  reads.
+- Use the dashboard for human inspection, not as the only source of truth.
+- Use `node health` and logs for automated checks and incident triage.
 
 ## Resources
 
-- [xian-network/xian-stack](https://github.com/xian-network/xian-stack) — Docker setup
-- [xian-network/xian-core](https://github.com/xian-network/xian-core) — Core node
-- [xian-network/xian-py](https://github.com/xian-network/xian-py) — Python SDK
-- [CometBFT docs](https://docs.cometbft.com/) — Consensus engine
-- [xian.org](https://xian.org) — Project site
+- [xian-tech-cli on PyPI](https://pypi.org/project/xian-tech-cli/)
+- [xian-technology/xian-cli](https://github.com/xian-technology/xian-cli)
+- [xian-technology/xian-stack](https://github.com/xian-technology/xian-stack)
+- [xian node docs](https://docs.xian.org/node/)

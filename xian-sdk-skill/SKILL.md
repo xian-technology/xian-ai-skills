@@ -1,35 +1,63 @@
 ---
 name: xian-sdk
-description: Build applications on the Xian blockchain using the xian-py Python SDK. Use when developing apps that interact with Xian — wallets, transactions, smart contracts, state queries, token transfers. Covers sync and async patterns.
+description: Build applications on the Xian blockchain using the current Python SDK. Use when writing wallets, bots, contract deployment tooling, indexers, or backend services that talk to Xian nodes.
 ---
 
 # Xian SDK Skill
 
-Build applications on [Xian](https://xian.org) using the [xian-py](https://github.com/xian-network/xian-py) Python SDK.
+Use this skill when working with the current Xian Python SDK.
+
+Important packaging detail:
+
+- install package: `xian-tech-py`
+- import module: `xian_py`
 
 ## Installation
 
 ```bash
-pip install xian-py
+pip install xian-tech-py
 
-# With Ethereum wallet support
-pip install "xian-py[eth]"
+# Optional HD wallet support
+pip install "xian-tech-py[hd]"
+
+# Optional Ethereum wallet compatibility helpers
+pip install "xian-tech-py[eth]"
 ```
+
+## Default Workflow
+
+1. Create or load a wallet.
+2. Connect `Xian` or `XianAsync` to the node RPC.
+3. Use `estimate_stamps(...)` or `simulate(...)` before expensive writes.
+4. Submit writes with `mode="commit"` or `wait_for_tx=True` when downstream
+   logic depends on confirmed chain state.
+5. Use indexed reads for blocks, txs, events, and state history when the node
+   exposes BDS-backed APIs.
 
 ## Quick Reference
 
 ```python
-from xian_py import Xian, Wallet
+from xian_py import Xian, XianAsync, Wallet
 
-wallet = Wallet()  # New wallet
-xian = Xian('http://node:26657', wallet=wallet)
+wallet = Wallet()
+xian = Xian("http://127.0.0.1:26657", wallet=wallet)
 
-# Common operations
 balance = xian.get_balance(wallet.public_key)
-state = xian.get_state('contract', 'variable', 'key')
-result = xian.send(amount=100, to_address='recipient')
-result = xian.send_tx('contract', 'function', {'arg': 'value'})
-result = xian.submit_contract('name', code)
+state = xian.get_state("currency", "balances", wallet.public_key)
+
+quote = xian.estimate_stamps("currency", "transfer", {
+    "to": "recipient",
+    "amount": 10,
+})
+
+tx = xian.send(
+    amount=10,
+    to_address="recipient",
+    mode="commit",
+)
+
+receipt = xian.wait_for_tx(tx.tx_hash)
+events = xian.list_events("currency", "Transfer", limit=25)
 ```
 
 ## Wallets
@@ -39,127 +67,96 @@ result = xian.submit_contract('name', code)
 ```python
 from xian_py import Wallet
 
-# Create new wallet (random seed)
 wallet = Wallet()
+restored = Wallet("ed30796abc4ab47a97bfb37359f50a9c362c7b304a4b4ad1b3f5369ecb6f7fd8")
 
-# From existing private key
-wallet = Wallet('ed30796abc4ab47a97bfb37359f50a9c362c7b304a4b4ad1b3f5369ecb6f7fd8')
-
-print(wallet.public_key)   # Address
-print(wallet.private_key)  # Keep secret!
+print(wallet.public_key)
 ```
 
-### HD Wallet (BIP39/BIP32)
+### HD Wallet
 
 ```python
 from xian_py.wallet import HDWallet
 
-# Create with new 24-word mnemonic
 hd = HDWallet()
-print(hd.mnemonic_str)  # Save this!
+print(hd.mnemonic_str)
 
-# Restore from mnemonic
-hd = HDWallet('word1 word2 word3 ... word24')
-
-# Derive Xian wallet
-path = [44, 0, 0, 0, 0]  # m/44'/0'/0'/0'/0'
-wallet = hd.get_wallet(path)
-
-# Derive Ethereum wallet (requires eth extras)
-eth_wallet = hd.get_ethereum_wallet(0)  # First account
-eth_wallet2 = hd.get_ethereum_wallet(1)  # Second account
+wallet0 = hd.get_wallet([44, 0, 0, 0, 0])
+wallet1 = hd.get_wallet([44, 0, 0, 0, 1])
 ```
 
-### Signing & Verification
+## Reads
 
-```python
-wallet = Wallet()
-
-# Sign message
-signature = wallet.sign_msg("Hello Xian")
-
-# Verify
-is_valid = wallet.verify_msg("Hello Xian", signature)
-
-# Validate key format
-Wallet.is_valid_key(wallet.public_key)  # True
-```
-
-## Blockchain Queries
+### Contract State
 
 ```python
 from xian_py import Xian
 
-xian = Xian('http://node:26657')
+xian = Xian("http://127.0.0.1:26657")
 
-# Balance (default: currency contract)
-balance = xian.get_balance('address')
-
-# Custom token balance
-balance = xian.get_balance('address', contract='token_contract')
-
-# Contract state
-state = xian.get_state('contract_name', 'variable', 'key')
-
-# Get contract source
-source = xian.get_contract('contract_name', clean=True)
+balance = xian.get_state("currency", "balances", "some_address")
+allowance = xian.get_state("currency", "balances", "owner", "spender")
+source = xian.get_contract("currency")
+runtime_code = xian.get_contract_code("currency")
 ```
 
-## Transactions
-
-### Simple Token Transfer
+### Read-Only Call and Simulation
 
 ```python
-from xian_py import Xian, Wallet
+result = xian.call("currency", "balance_of", {"address": wallet.public_key})
 
-wallet = Wallet('your_private_key')
-xian = Xian('http://node:26657', wallet=wallet)
+simulation = xian.simulate("currency", "transfer", {
+    "to": "recipient",
+    "amount": 5,
+})
 
-# Send tokens (auto stamp calculation)
-result = xian.send(amount=100, to_address='recipient')
-
-if result['success']:
-    print(f"TX: {result['tx_hash']}")
+stamps = xian.estimate_stamps("currency", "transfer", {
+    "to": "recipient",
+    "amount": 5,
+})
 ```
 
-### Contract Interaction
+## Writes
+
+### Simple Transfer
 
 ```python
-# Call any contract function
-result = xian.send_tx(
-    contract='currency',
-    function='transfer',
-    kwargs={'to': 'recipient', 'amount': 1000}
+tx = xian.send(
+    amount=25,
+    to_address="recipient",
+    token="currency",
+    mode="commit",
 )
 
-# With custom token
-result = xian.send_tx(
-    contract='my_token',
-    function='transfer',
-    kwargs={'to': 'recipient', 'amount': 500}
+print(tx.tx_hash)
+```
+
+### Generic Contract Call
+
+```python
+tx = xian.send_tx(
+    contract="currency",
+    function="approve",
+    kwargs={"to": "spender", "amount": 100},
+    mode="commit",
 )
 ```
 
-### Stamp Estimation
+### Approval Helper
 
 ```python
-from xian_py.transaction import simulate_tx, get_nonce
-
-# Simulate to get stamp cost
-payload = {
-    "contract": "currency",
-    "function": "transfer",
-    "kwargs": {"to": "recipient", "amount": 100},
-    "sender": wallet.public_key,
-}
-
-result = simulate_tx('http://node:26657', payload)
-print(f"Stamps needed: {result['stamps_used']}")
+tx = xian.approve(
+    contract="con_dex",
+    token="currency",
+    amount=500,
+    mode="commit",
+)
 ```
 
-## Smart Contracts
+## Contract Deployment
 
-### Deploy Contract
+Contract names must start with a lowercase ASCII letter and then use only
+lowercase ASCII letters, digits, or underscores.
 
 ```python
 code = '''
@@ -167,66 +164,42 @@ balances = Hash(default_value=0)
 
 @construct
 def seed():
-    balances[ctx.caller] = 1_000_000
+    balances[ctx.caller] = 1000
 
 @export
 def transfer(to: str, amount: float):
     assert amount > 0, "Amount must be positive"
     assert balances[ctx.caller] >= amount, "Insufficient balance"
-    
     balances[ctx.caller] -= amount
     balances[to] += amount
-
-@export
-def balance_of(address: str) -> float:
-    return balances[address]
 '''
 
-result = xian.submit_contract('my_token', code)
-print(f"Deployed: {result['success']}")
+tx = xian.submit_contract(
+    name="my_token",
+    code=code,
+    mode="commit",
+)
 ```
 
-### Contract Patterns
+See `references/contract-patterns.md` for current contract snippets.
 
-See `references/contract-patterns.md` for common patterns (tokens, access control, pausable, upgrades).
+## Indexed Data
 
-### Contract Validation
-
-Validate against [Xian standards](https://github.com/xian-network/xian-standard-contracts):
+These methods are the right choice when the node is running with BDS/indexed
+reads enabled.
 
 ```python
-from xian_py.validator import validate_contract, XianStandard
-
-is_valid, errors = validate_contract(code)  # XSC001 default
-
-# Specific standard
-is_valid, errors = validate_contract(code, standard=XianStandard.XSC001)
-
-if not is_valid:
-    print(errors)
+blocks = xian.list_blocks(limit=20)
+block = xian.get_block(100)
+indexed_tx = xian.get_indexed_tx("ABC123...")
+sender_txs = xian.list_txs_by_sender(wallet.public_key, limit=50)
+contract_txs = xian.list_txs_by_contract("con_dex", limit=50)
+events = xian.list_events("con_pairs", "Swap", limit=25)
+state_history = xian.get_state_history("currency.balances:some_address", limit=25)
+dev_rewards = xian.get_developer_rewards(wallet.public_key)
 ```
 
-### Read-Only Execution
-
-Query contract without spending stamps:
-
-```python
-from xian_py.transaction import simulate_tx
-
-payload = {
-    "contract": "my_token",
-    "function": "balance_of",
-    "kwargs": {"address": "some_address"},
-    "sender": wallet.public_key,
-}
-
-result = simulate_tx('http://node:26657', payload)
-print(f"Balance: {result['result']}")
-```
-
-## Async Operations
-
-For high-performance applications:
+## Async Pattern
 
 ```python
 import asyncio
@@ -234,116 +207,47 @@ from xian_py import XianAsync, Wallet
 
 async def main():
     wallet = Wallet()
-    
-    async with XianAsync('http://node:26657', wallet=wallet) as xian:
-        # Concurrent queries
-        balance, state = await asyncio.gather(
+    async with XianAsync("http://127.0.0.1:26657", wallet=wallet) as xian:
+        balance, status = await asyncio.gather(
             xian.get_balance(wallet.public_key),
-            xian.get_state('currency', 'balances', 'address')
+            xian.get_node_status(),
         )
-        
-        # Send transaction
-        result = await xian.send(amount=100, to_address='recipient')
+
+        tx = await xian.send_tx(
+            contract="currency",
+            function="transfer",
+            kwargs={"to": "recipient", "amount": 3},
+            mode="commit",
+        )
+
+        receipt = await xian.wait_for_tx(tx.tx_hash)
+        return balance, status, receipt
 
 asyncio.run(main())
 ```
 
-### Batch Operations
+## Event and Block Watching
 
 ```python
-async def check_balances(addresses: list[str]):
-    async with XianAsync('http://node:26657') as xian:
-        balances = await asyncio.gather(*[
-            xian.get_balance(addr) for addr in addresses
-        ])
-        return dict(zip(addresses, balances))
+for block in xian.watch_blocks():
+    print(block.height, block.hash)
 ```
 
-### Sync Wrapper
+For contract events, prefer indexed polling with `list_events(...)` and an
+`after_id` cursor when you need restart-safe consumers.
 
-Call async from sync code:
+## SDK Guidance
 
-```python
-from xian_py import XianAsync, run_sync
-
-def get_balance_sync(address: str) -> float:
-    async def _get():
-        async with XianAsync('http://node:26657') as xian:
-            return await xian.get_balance(address)
-    return run_sync(_get())
-
-balance = get_balance_sync('address')
-```
-
-## Encryption
-
-Two-way encrypted messaging:
-
-```python
-from xian_py import Wallet
-from xian_py.crypto import encrypt, decrypt_as_sender, decrypt_as_receiver
-
-sender = Wallet()
-receiver = Wallet()
-
-# Encrypt
-encrypted = encrypt(sender.private_key, receiver.public_key, "Secret message")
-
-# Decrypt as sender
-msg = decrypt_as_sender(sender.private_key, receiver.public_key, encrypted)
-
-# Decrypt as receiver  
-msg = decrypt_as_receiver(sender.public_key, receiver.private_key, encrypted)
-```
-
-## Error Handling
-
-```python
-from xian_py import Xian, XianException
-
-try:
-    result = xian.send_tx('contract', 'function', {})
-except XianException as e:
-    print(f"Blockchain error: {e}")
-```
-
-## Common Patterns
-
-### Token Transfer Service
-
-```python
-class TokenService:
-    def __init__(self, node_url: str, private_key: str):
-        self.wallet = Wallet(private_key)
-        self.xian = Xian(node_url, wallet=self.wallet)
-    
-    def transfer(self, to: str, amount: float, token: str = 'currency'):
-        balance = self.xian.get_balance(self.wallet.public_key, contract=token)
-        if balance < amount:
-            raise ValueError(f"Insufficient: {balance} < {amount}")
-        
-        return self.xian.send_tx(token, 'transfer', {'to': to, 'amount': amount})
-```
-
-### DEX Swap
-
-```python
-async def swap(xian, dex: str, token_in: str, token_out: str, 
-               amount: float, min_out: float):
-    # Approve DEX
-    await xian.send_tx(token_in, 'approve', {'to': dex, 'amount': amount})
-    
-    # Execute swap
-    return await xian.send_tx(dex, 'swap', {
-        'token_in': token_in,
-        'token_out': token_out,
-        'amount_in': amount,
-        'min_amount_out': min_out
-    })
-```
+- Prefer `mode="commit"` for writes that feed a later step.
+- Prefer `estimate_stamps(...)` over hardcoding stamp values.
+- Prefer `approve(...)` and other helper methods when they fit.
+- Prefer indexed APIs for analytics, explorers, and bots.
+- Treat `get_contract(...)` as original contract source and
+  `get_contract_code(...)` as compiled/runtime code.
 
 ## Resources
 
-- [xian-py GitHub](https://github.com/xian-network/xian-py) — Full SDK docs
-- [Xian Standard Contracts](https://github.com/xian-network/xian-standard-contracts) — Token standards
-- [xian.org](https://xian.org) — Project site
+- [xian-tech-py on PyPI](https://pypi.org/project/xian-tech-py/)
+- [xian-technology/xian-py](https://github.com/xian-technology/xian-py)
+- [xian-technology/xian-contracting](https://github.com/xian-technology/xian-contracting)
+- [xian docs](https://docs.xian.org)

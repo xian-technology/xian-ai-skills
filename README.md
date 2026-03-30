@@ -1,59 +1,61 @@
-# 🐍 Xian AI Skills
+# Xian AI Skills
 
-AI agent skills for the [Xian](https://xian.org) blockchain — a Layer 1 with native Python smart contracts on CometBFT.
+AI-agent skills for the [Xian](https://xian.org) blockchain.
 
-These skills give AI agents (OpenClaw, Codex, Claude Code, etc.) the knowledge to build on Xian, deploy nodes, write smart contracts, and interact with the network programmatically.
+These skills are meant for coding agents such as Codex, Claude Code, and other
+tooling that needs current Xian workflows instead of stale repo-era guidance.
 
 ## Skills
 
 ### [`xian-sdk-skill`](./xian-sdk-skill/)
 
-Build applications on Xian using the [xian-py](https://github.com/xian-network/xian-py) Python SDK.
+Build applications on Xian with the current Python SDK.
 
-- Wallet creation (basic, HD/BIP39, Ethereum-derived)
-- Token transfers and contract interactions
-- Smart contract deployment and validation
-- State queries and transaction simulation
-- Async/batch operations
-- Encrypted messaging
-- Common patterns: DEX swaps, token services
+- install with `xian-tech-py`
+- use current `xian_py` imports
+- submit transactions, estimate stamps, simulate calls, deploy contracts
+- read indexed blocks, transactions, events, and state history
+- build wallets, bots, and service integrations
 
 ### [`xian-node-skill`](./xian-node-skill/)
 
-Deploy and manage Xian blockchain nodes via [xian-stack](https://github.com/xian-network/xian-stack).
+Operate Xian nodes with the current CLI and stack model.
 
-- Join mainnet or testnet
-- Create new networks
-- Validator and service node setup
-- Node monitoring and troubleshooting
-- CometBFT configuration
-- Docker-based deployment
+- install with `xian-tech-cli`
+- join canonical networks with manifest-pinned images
+- run validators and service nodes
+- start optional dashboard, monitoring, and `xian-intentkit`
+- inspect health, endpoints, and runtime provenance
+
+### [`xian-dex-skill`](./xian-dex-skill/)
+
+Work with the current Xian DEX contracts.
+
+- quote trades through `con_dex`
+- use `con_dex_helper` for single-pair buy and sell flows
+- use direct router calls for multi-hop swaps and liquidity management
+- inspect DEX events through indexed reads
+- build autonomous polling-based trading workflows safely
 
 ## Usage
 
-Each skill folder contains a `SKILL.md` that AI agents read to learn the relevant APIs and workflows. Point your agent at the skill folder or copy it into your agent's skill directory.
+Each skill folder contains a `SKILL.md` that an agent can read directly.
 
-**OpenClaw example:**
 ```bash
-# Install via ClawdHub (when available)
-clawdhub install xian-sdk-skill
-clawdhub install xian-node-skill
-```
-
-**Manual:**
-```bash
-# Copy into your agent's skills directory
 cp -r xian-sdk-skill /path/to/agent/skills/
 cp -r xian-node-skill /path/to/agent/skills/
+cp -r xian-dex-skill /path/to/agent/skills/
 ```
 
 ## Resources
 
-- [xian.org](https://xian.org) — Project site
-- [xian-py](https://github.com/xian-network/xian-py) — Python SDK
-- [xian-stack](https://github.com/xian-network/xian-stack) — Node deployment
-- [xian-core](https://github.com/xian-network/xian-core) — Core node software
-- [Xian Standard Contracts](https://github.com/xian-network/xian-standard-contracts) — Token standards
+- [xian.org](https://xian.org)
+- [xian-tech-py](https://pypi.org/project/xian-tech-py/)
+- [xian-tech-cli](https://pypi.org/project/xian-tech-cli/)
+- [xian-technology/xian-py](https://github.com/xian-technology/xian-py)
+- [xian-technology/xian-cli](https://github.com/xian-technology/xian-cli)
+- [xian-technology/xian-stack](https://github.com/xian-technology/xian-stack)
+- [xian-technology/xian-contracts](https://github.com/xian-technology/xian-contracts)
 
 ## License
 
