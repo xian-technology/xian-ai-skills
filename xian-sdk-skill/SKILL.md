@@ -95,7 +95,7 @@ from xian_py import Xian
 xian = Xian("http://127.0.0.1:26657")
 
 balance = xian.get_state("currency", "balances", "some_address")
-allowance = xian.get_state("currency", "balances", "owner", "spender")
+allowance = xian.get_state("currency", "approvals", "owner", "spender")
 source = xian.get_contract("currency")
 runtime_code = xian.get_contract_code("currency")
 ```

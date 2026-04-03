@@ -25,6 +25,7 @@ Transfer = LogEvent(
 )
 
 balances = Hash(default_value=0)
+approvals = Hash(default_value=0)
 metadata = Hash()
 
 @construct
@@ -45,14 +46,14 @@ def transfer(amount: float, to: str):
 @export
 def approve(amount: float, to: str):
     assert amount >= 0, "Cannot approve negative balances"
-    balances[ctx.caller, to] = amount
+    approvals[ctx.caller, to] = amount
 
 @export
 def transfer_from(amount: float, to: str, main_account: str):
     assert amount > 0, "Amount must be positive"
-    assert balances[main_account, ctx.caller] >= amount, "Not approved"
+    assert approvals[main_account, ctx.caller] >= amount, "Not approved"
     assert balances[main_account] >= amount, "Insufficient balance"
-    balances[main_account, ctx.caller] -= amount
+    approvals[main_account, ctx.caller] -= amount
     balances[main_account] -= amount
     balances[to] += amount
     Transfer({"from": main_account, "to": to, "amount": amount})
