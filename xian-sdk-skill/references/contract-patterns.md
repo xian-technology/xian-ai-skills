@@ -16,11 +16,19 @@ Current contract snippets for Xian smart contracts written in Python.
 
 ```python
 Transfer = LogEvent(
-    event="Transfer",
-    params={
+    "Transfer",
+    {
         "from": {"type": str, "idx": True},
         "to": {"type": str, "idx": True},
-        "amount": {"type": (int, float, decimal)},
+        "amount": {"type": float},
+    },
+)
+Approve = LogEvent(
+    "Approve",
+    {
+        "from": {"type": str, "idx": True},
+        "to": {"type": str, "idx": True},
+        "amount": {"type": float},
     },
 )
 
@@ -32,7 +40,10 @@ metadata = Hash()
 def seed():
     metadata["token_name"] = "My Token"
     metadata["token_symbol"] = "MTK"
+    metadata["token_logo_url"] = ""
+    metadata["token_website"] = ""
     metadata["operator"] = ctx.caller
+    metadata["total_supply"] = 1_000_000
     balances[ctx.caller] = 1_000_000
 
 @export
@@ -47,6 +58,7 @@ def transfer(amount: float, to: str):
 def approve(amount: float, to: str):
     assert amount >= 0, "Cannot approve negative balances"
     approvals[ctx.caller, to] = amount
+    Approve({"from": ctx.caller, "to": to, "amount": amount})
 
 @export
 def transfer_from(amount: float, to: str, main_account: str):
@@ -61,6 +73,10 @@ def transfer_from(amount: float, to: str, main_account: str):
 @export
 def balance_of(address: str) -> float:
     return balances[address]
+
+@export
+def allowance(owner: str, spender: str) -> float:
+    return approvals[owner, spender]
 ```
 
 ## Access Control
@@ -171,8 +187,8 @@ Use `LogEvent`, not a returned dict payload.
 
 ```python
 Action = LogEvent(
-    event="Action",
-    params={
+    "Action",
+    {
         "actor": {"type": str, "idx": True},
         "value": {"type": int},
     },
