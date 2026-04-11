@@ -1,0 +1,48 @@
+name: Validate
+
+on:
+  push:
+    branches:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Validate skill layout
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          root = Path(".")
+          readme = root / "README.md"
+          if not readme.exists():
+              raise SystemExit("README.md is required")
+          readme.read_text(encoding="utf-8")
+
+          skill_dirs = sorted(
+              path
+              for path in root.iterdir()
+              if path.is_dir() and path.name.endswith("-skill")
+          )
+          if not skill_dirs:
+              raise SystemExit("expected at least one *-skill directory")
+
+          for path in skill_dirs:
+              skill_file = path / "SKILL.md"
+              if not skill_file.exists():
+                  raise SystemExit(f"missing {skill_file}")
+              skill_file.read_text(encoding="utf-8")
+              print(f"ok  {skill_file}")
+          PY
