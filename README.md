@@ -64,6 +64,15 @@ Work with the current Xian browser and mobile wallets.
 - handle asset decimals, amount entry, and explorer/network settings correctly
 - understand shielded snapshot backup and stale-history checks
 
+### [`xian-contract-skill`](./xian-contract-skill/)
+
+Author and validate current Xian smart contracts correctly.
+
+- follow current `xian-contracting` execution and lint rules
+- use the modern `LogEvent("Event", {...})` style
+- target current XSC001 token shape for fungible tokens
+- validate package layout, lint/compile checks, tests, and deployment paths
+
 ## Usage
 
 Each skill folder contains a `SKILL.md` that an agent can read directly.
@@ -75,6 +84,7 @@ cp -r xian-dex-skill /path/to/agent/skills/
 cp -r xian-zk-skill /path/to/agent/skills/
 cp -r xian-bds-skill /path/to/agent/skills/
 cp -r xian-wallet-skill /path/to/agent/skills/
+cp -r xian-contract-skill /path/to/agent/skills/
 ```
 
 ## Resources
