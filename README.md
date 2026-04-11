@@ -13,7 +13,7 @@ Build applications on Xian with the current Python SDK.
 
 - install with `xian-tech-py`
 - use current `xian_py` imports
-- submit transactions, estimate stamps, simulate calls, deploy contracts
+- submit transactions, estimate chi, simulate calls, deploy contracts
 - read indexed blocks, transactions, events, and state history
 - build wallets, bots, and service integrations
 

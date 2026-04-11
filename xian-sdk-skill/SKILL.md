@@ -28,7 +28,7 @@ pip install "xian-tech-py[eth]"
 
 1. Create or load a wallet.
 2. Connect `Xian` or `XianAsync` to the node RPC.
-3. Use `estimate_stamps(...)` or `simulate(...)` before expensive writes.
+3. Use `estimate_chi(...)` or `simulate(...)` before expensive writes.
 4. Submit writes with `mode="commit"` or `wait_for_tx=True` when downstream
    logic depends on confirmed chain state.
 5. Use indexed reads for blocks, txs, events, and state history when the node
@@ -45,7 +45,7 @@ xian = Xian("http://127.0.0.1:26657", wallet=wallet)
 balance = xian.get_balance(wallet.public_key)
 state = xian.get_state("currency", "balances", wallet.public_key)
 
-quote = xian.estimate_stamps("currency", "transfer", {
+quote = xian.estimate_chi("currency", "transfer", {
     "to": "recipient",
     "amount": 10,
 })
@@ -110,7 +110,7 @@ simulation = xian.simulate("currency", "transfer", {
     "amount": 5,
 })
 
-stamps = xian.estimate_stamps("currency", "transfer", {
+chi_quote = xian.estimate_chi("currency", "transfer", {
     "to": "recipient",
     "amount": 5,
 })
@@ -239,7 +239,7 @@ For contract events, prefer indexed polling with `list_events(...)` and an
 ## SDK Guidance
 
 - Prefer `mode="commit"` for writes that feed a later step.
-- Prefer `estimate_stamps(...)` over hardcoding stamp values.
+- Prefer `estimate_chi(...)` over hardcoding chi values.
 - Prefer `approve(...)` and other helper methods when they fit.
 - Prefer indexed APIs for analytics, explorers, and bots.
 - Treat `get_contract(...)` as original contract source and
