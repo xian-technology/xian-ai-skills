@@ -55,6 +55,15 @@ Use Xian's indexed/BDS read surface and recovery model correctly.
 - understand what depends on BDS and what does not
 - use standardized `xian-stack` BDS snapshot export/import for recovery
 
+### [`xian-wallet-skill`](./xian-wallet-skill/)
+
+Work with the current Xian browser and mobile wallets.
+
+- understand current browser extension and mobile wallet responsibilities
+- use advanced contract-call flows for token factory and other contract actions
+- handle asset decimals, amount entry, and explorer/network settings correctly
+- understand shielded snapshot backup and stale-history checks
+
 ## Usage
 
 Each skill folder contains a `SKILL.md` that an agent can read directly.
@@ -65,6 +74,7 @@ cp -r xian-node-skill /path/to/agent/skills/
 cp -r xian-dex-skill /path/to/agent/skills/
 cp -r xian-zk-skill /path/to/agent/skills/
 cp -r xian-bds-skill /path/to/agent/skills/
+cp -r xian-wallet-skill /path/to/agent/skills/
 ```
 
 ## Resources
