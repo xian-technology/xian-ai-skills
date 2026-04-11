@@ -73,6 +73,15 @@ Author and validate current Xian smart contracts correctly.
 - target current XSC001 token shape for fungible tokens
 - validate package layout, lint/compile checks, tests, and deployment paths
 
+### [`xian-governance-skill`](./xian-governance-skill/)
+
+Work with Xian's current validator governance and operator lifecycle.
+
+- use `xian-cli` as the operator-facing control plane
+- use `make localnet-validator-governance` for focused live governance coverage
+- validate membership, delegation, state-patch, and evidence/slashing flows
+- keep backend/runtime concerns separate from CLI/operator concerns
+
 ## Usage
 
 Each skill folder contains a `SKILL.md` that an agent can read directly.
@@ -85,6 +94,7 @@ cp -r xian-zk-skill /path/to/agent/skills/
 cp -r xian-bds-skill /path/to/agent/skills/
 cp -r xian-wallet-skill /path/to/agent/skills/
 cp -r xian-contract-skill /path/to/agent/skills/
+cp -r xian-governance-skill /path/to/agent/skills/
 ```
 
 ## Resources
