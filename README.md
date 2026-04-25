@@ -105,6 +105,7 @@ cp -r xian-governance-skill /path/to/agent/skills/
 - [xian-technology/xian-py](https://github.com/xian-technology/xian-py)
 - [xian-technology/xian-cli](https://github.com/xian-technology/xian-cli)
 - [xian-technology/xian-stack](https://github.com/xian-technology/xian-stack)
+- [xian-technology/xian-dex](https://github.com/xian-technology/xian-dex)
 - [xian-technology/xian-contracts](https://github.com/xian-technology/xian-contracts)
 - [xian-technology/xian-contracting](https://github.com/xian-technology/xian-contracting)
 - [xian-technology/xian-abci](https://github.com/xian-technology/xian-abci)

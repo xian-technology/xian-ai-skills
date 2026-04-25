@@ -331,8 +331,8 @@ subscription. Design the strategy around periodic checks.
 
 - [xian-tech-py on PyPI](https://pypi.org/project/xian-tech-py/)
 - [xian-technology/xian-py](https://github.com/xian-technology/xian-py)
-- [xian-technology/xian-contracts](https://github.com/xian-technology/xian-contracts)
+- [xian-technology/xian-dex](https://github.com/xian-technology/xian-dex)
 - current DEX contracts:
-  - `contracts/dex/src/con_dex.py`
-  - `contracts/dex/src/con_dex_helper.py`
-  - `contracts/dex/src/con_pairs.py`
+  - `src/con_dex.py`
+  - `src/con_dex_helper.py`
+  - `src/con_pairs.py`
