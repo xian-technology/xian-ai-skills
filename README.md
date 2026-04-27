@@ -10,6 +10,18 @@ repo-era guidance.
 The repo is content, not runtime code. It contains no application
 logic — just the skills agents read at prompt time.
 
+## Skill Consumption Flow
+
+```mermaid
+flowchart LR
+  User["Skill user"] --> Copy["Copy selected skill folder"]
+  Copy --> Agent["Coding agent skill directory"]
+  Agent --> Skill["SKILL.md entrypoint"]
+  Skill --> References["Supporting references"]
+  References --> XianRepos["Current Xian repos and packages"]
+  Agent --> Work["Xian implementation work"]
+```
+
 ## Quick Start
 
 Copy the relevant skill folders into your agent's skills directory:
