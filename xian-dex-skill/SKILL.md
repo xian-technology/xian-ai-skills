@@ -45,7 +45,7 @@ That matches the current contract split.
 ## Setup
 
 ```bash
-pip install xian-tech-py
+uv add xian-tech-py
 ```
 
 ```python

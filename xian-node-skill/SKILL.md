@@ -15,7 +15,7 @@ Important packaging detail:
 ## Installation
 
 ```bash
-pip install xian-tech-cli
+uv tool install xian-tech-cli
 ```
 
 ## Core Model

@@ -15,13 +15,13 @@ Important packaging detail:
 ## Installation
 
 ```bash
-pip install xian-tech-py
+uv add xian-tech-py
 
 # Optional HD wallet support
-pip install "xian-tech-py[hd]"
+uv add "xian-tech-py[hd]"
 
 # Optional Ethereum wallet compatibility helpers
-pip install "xian-tech-py[eth]"
+uv add "xian-tech-py[eth]"
 ```
 
 ## Default Workflow

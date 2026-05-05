@@ -13,7 +13,7 @@ def generate_keypair():
     try:
         from nacl.signing import SigningKey
     except ImportError:
-        print("Error: PyNaCl not installed. Run: pip install pynacl")
+        print('Error: PyNaCl not installed. Run: uv add "pynacl"')
         raise SystemExit(1)
     
     sk = SigningKey(secrets.token_bytes(32))
