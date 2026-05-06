@@ -47,6 +47,12 @@ to.
   (`xian-tech-py`, `xian-tech-cli`), current contract patterns
   (`con_*` naming, `LogEvent`, current XSC001 shape), and current
   operator surfaces (manifests, profiles, BDS snapshots).
+- **uv for Python.** Python repos and examples use `uv sync`, `uv run`,
+  `uv add`, or `uv tool install`. Do not recommend Poetry, Pipenv, ad hoc
+  virtualenv setup, or direct package-manager rewrites in these skills.
+- **CLI invocation is explicit.** Installed operator flows use the `xian`
+  console command. Local source-tree flows use `uv run --project
+  /path/to/xian-cli xian ...`.
 - **One skill per surface.** Splitting by surface keeps prompt
   context tight: an agent doing DEX work does not need governance
   context bleeding in.

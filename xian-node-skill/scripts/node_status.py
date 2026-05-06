@@ -4,8 +4,8 @@
 import argparse
 import json
 import sys
-from urllib.request import urlopen
 from urllib.error import URLError
+from urllib.request import urlopen
 
 
 def get_status(rpc_url: str) -> dict:
@@ -26,35 +26,35 @@ def format_height(height: int) -> str:
 def main():
     parser = argparse.ArgumentParser(description="Check Xian node status")
     parser.add_argument(
-        "--rpc", 
+        "--rpc",
         default="http://localhost:26657",
-        help="RPC endpoint (default: http://localhost:26657)"
+        help="RPC endpoint (default: http://localhost:26657)",
     )
     parser.add_argument(
-        "--json", 
+        "--json",
         action="store_true",
-        help="Output raw JSON"
+        help="Output raw JSON",
     )
     args = parser.parse_args()
 
     status = get_status(args.rpc)
-    
+
     if args.json:
         print(json.dumps(status, indent=2))
         return
 
     node_info = status["node_info"]
     sync_info = status["sync_info"]
-    
+
     current = int(sync_info["latest_block_height"])
     catching_up = sync_info["catching_up"]
-    
+
     print(f"Node:     {node_info['moniker']} ({node_info['id'][:8]}...)")
     print(f"Network:  {node_info['network']}")
     print(f"Height:   {format_height(current)}")
     print(f"Syncing:  {'Yes' if catching_up else 'No (fully synced)'}")
     print(f"Time:     {sync_info['latest_block_time']}")
-    
+
     if catching_up:
         # Try to get peer info for max height estimation
         try:
@@ -62,7 +62,7 @@ def main():
                 net = json.load(resp)["result"]
                 peers = int(net["n_peers"])
                 print(f"Peers:    {peers}")
-        except:
+        except (KeyError, TypeError, ValueError, URLError, TimeoutError):
             pass
 
 

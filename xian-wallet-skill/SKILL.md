@@ -178,9 +178,15 @@ Use the repo-native checks for the affected wallet:
 
 ```bash
 # Browser wallet
-npm run test:browser --workspace xian-wallet-extension
-npm run test:visual --workspace xian-wallet-extension
+npm run typecheck
+npm run build
+npm test
 
 # Mobile wallet
+npm run typecheck
 npm test
 ```
+
+Both wallet repos currently use npm with committed `package-lock.json` files.
+Do not switch them to another JS package manager as part of wallet work unless
+that migration is an explicit task.

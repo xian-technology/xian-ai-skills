@@ -13,12 +13,15 @@ def generate_keypair():
     try:
         from nacl.signing import SigningKey
     except ImportError:
-        print('Error: PyNaCl not installed. Run: uv add "pynacl"')
+        print(
+            "Error: PyNaCl not installed. Run this helper with: "
+            'uv run --with pynacl python generate_validator_key.py'
+        )
         raise SystemExit(1)
-    
+
     sk = SigningKey(secrets.token_bytes(32))
     pk = sk.verify_key
-    
+
     return sk.encode().hex(), pk.encode().hex()
 
 
@@ -39,17 +42,17 @@ def main():
     parser.add_argument(
         "--name",
         default="validator",
-        help="Validator name for genesis entry"
+        help="Validator name for genesis entry",
     )
     parser.add_argument(
         "--power",
         default="10",
-        help="Voting power (default: 10)"
+        help="Voting power (default: 10)",
     )
     parser.add_argument(
         "--genesis-entry",
         action="store_true",
-        help="Output genesis validator entry JSON"
+        help="Output genesis validator entry JSON",
     )
     args = parser.parse_args()
 
@@ -62,10 +65,10 @@ def main():
             "address": address,
             "pub_key": {
                 "type": "tendermint/PubKeyEd25519",
-                "value": pubkey_b64
+                "value": pubkey_b64,
             },
             "power": args.power,
-            "name": args.name
+            "name": args.name,
         }
         print("Genesis validator entry:")
         print(json.dumps(entry, indent=2))
@@ -75,7 +78,7 @@ def main():
         print(f"Public key:  {public_key}")
         print(f"Address:     {address}")
         print(f"Base64 key:  {pubkey_b64}")
-        print(f"\nUse --genesis-entry for ready-to-use genesis JSON")
+        print("\nUse --genesis-entry for ready-to-use genesis JSON")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,18 @@
 # Genesis File Template
 
-When creating a new Xian network, you need a genesis file that defines:
+Prefer the current CLI or stack generators for normal work:
+
+```bash
+xian network create localnet-1 --chain-id xian-localnet-1 \
+  --template single-node-dev --generate-validator-key --init-node
+
+# or, from xian-stack, for a multi-node dev network
+LOCALNET_NODES=5 make localnet-init
+```
+
+Use this reference only when you are inspecting or deliberately editing raw
+CometBFT genesis material. A genesis file defines:
+
 - Chain ID and initial time
 - Consensus parameters
 - Initial validators
@@ -127,7 +139,9 @@ For Xian, `app_state` can include initial contract deployments and balances. Lea
 
 ## Deploying Genesis
 
-1. Create your genesis file
-2. Place at `.cometbft/config/genesis.json` (or use `--copy-genesis` with configure)
-3. All validators must use identical genesis
-4. Start nodes — first block created when 2/3+ validators online
+1. Prefer `xian network create ... --init-node` or `make localnet-init`.
+2. If you are doing a raw low-level setup, place the file at
+   `.cometbft/config/genesis.json`.
+3. All validators must use identical genesis.
+4. Start nodes after the validator keys and peer seeds match the same network.
+   The first block is created once 2/3+ voting power is online.

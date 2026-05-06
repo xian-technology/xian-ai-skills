@@ -50,6 +50,20 @@ Use `xian-cli` when the task is about what an operator should do. Do not send
 users to ad hoc container commands or Make targets if the CLI already owns that
 flow.
 
+For local source-tree work, keep uv explicit:
+
+```bash
+uv run --project /path/to/xian-cli xian node status <profile>
+uv run --project /path/to/xian-cli xian doctor <profile>
+```
+
+For installed operator flows, use the installed console command:
+
+```bash
+xian node status <profile>
+xian doctor <profile>
+```
+
 ## Governance Validation Harness
 
 For live validator/delegation/governance validation, prefer the focused
@@ -76,6 +90,8 @@ The backend command surface also exposes the same flow through
 - `--build`
 
 Prefer the Make target unless you specifically need backend-level overrides.
+The Make target already invokes the required uv-backed Python projects for the
+sibling workspace.
 
 ## What The Harness Covers
 
@@ -122,15 +138,38 @@ handle them like production credentials.
 
 ## Validation
 
-Use the focused governance runner for end-to-end changes:
+Use the focused governance runner for governance-specific end-to-end changes:
 
 ```bash
 make localnet-validator-governance
 ```
 
+For broader stack changes that might affect validator behavior indirectly, run
+the full localnet harnesses as well:
+
+```bash
+make localnet-e2e
+make localnet-vm-e2e
+make localnet-vm-report
+```
+
+`localnet-e2e` writes artifacts under:
+
+- `.artifacts/localnet-e2e/<run-id>/`
+
+`localnet-validator-governance` writes artifacts under:
+
+- `.artifacts/localnet-validator-governance/<run-id>/`
+
 For operator lifecycle work, also check the CLI surface directly:
 
 ```bash
-xian node status
-xian doctor
+xian node status <profile>
+xian doctor <profile>
+```
+
+For release-grade stack validation, use:
+
+```bash
+make release-safety
 ```

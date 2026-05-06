@@ -35,16 +35,24 @@ Approve = LogEvent(
 balances = Hash(default_value=0)
 approvals = Hash(default_value=0)
 metadata = Hash()
+operator = Variable()
+total_supply = Variable(default_value=0)
 
 @construct
 def seed():
+    operator.set(ctx.caller)
+    total_supply.set(1_000_000)
     metadata["token_name"] = "My Token"
     metadata["token_symbol"] = "MTK"
     metadata["token_logo_url"] = ""
+    metadata["token_logo_svg"] = ""
     metadata["token_website"] = ""
-    metadata["operator"] = ctx.caller
-    metadata["total_supply"] = 1_000_000
-    balances[ctx.caller] = 1_000_000
+    balances[ctx.caller] = total_supply.get()
+
+@export
+def change_metadata(key: str, value: Any):
+    assert ctx.caller == operator.get(), "Only operator can change metadata"
+    metadata[key] = value
 
 @export
 def transfer(amount: float, to: str):

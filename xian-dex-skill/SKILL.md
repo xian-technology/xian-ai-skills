@@ -55,9 +55,13 @@ from xian_py import Xian, Wallet
 wallet = Wallet("your_private_key")
 xian = Xian("http://127.0.0.1:26657", wallet=wallet)
 
-def deadline(minutes: int = 5) -> str:
+def deadline(minutes: int = 5) -> datetime:
     return datetime.now(timezone.utc) + timedelta(minutes=minutes)
 ```
+
+The current helper and router contracts require an absolute future
+`datetime.datetime` deadline. Do not use the older relative `deadline_min`
+pattern.
 
 ## Pair Discovery
 
@@ -326,6 +330,7 @@ subscription. Design the strategy around periodic checks.
 - Prefer helper flows for simple single-pair trades.
 - Re-check the confirmed receipt before treating a trade as successful.
 - Use BDS/indexed reads for bots; do not scrape the dashboard.
+- Use uv-managed Python commands for SDK-based bots and deployment scripts.
 
 ## Resources
 

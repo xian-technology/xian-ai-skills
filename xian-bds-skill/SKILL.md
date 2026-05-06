@@ -71,8 +71,8 @@ Operator-side posture:
 surface:
 
 ```bash
-python3 ./scripts/backend.py bds-snapshot-export
-python3 ./scripts/backend.py bds-snapshot-import
+uv run python ./scripts/backend.py bds-snapshot-export
+uv run python ./scripts/backend.py bds-snapshot-import
 ```
 
 By default the archive lives under:
@@ -106,7 +106,14 @@ history.
 Check both the client read path and the operator recovery path:
 
 ```bash
-pytest -q xian-py/tests
-python3 ./scripts/backend.py bds-snapshot-export
-python3 ./scripts/backend.py bds-snapshot-import
+uv run --project /path/to/xian-py pytest -q
+uv run python ./scripts/backend.py bds-snapshot-export
+uv run python ./scripts/backend.py bds-snapshot-import
+```
+
+For cross-repo BDS behavior, prefer `xian-stack` localnet harnesses over
+isolated read tests:
+
+```bash
+make localnet-e2e
 ```

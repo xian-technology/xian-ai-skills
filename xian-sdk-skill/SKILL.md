@@ -14,6 +14,8 @@ Important packaging detail:
 
 ## Installation
 
+Inside a uv-managed Python project:
+
 ```bash
 uv add xian-tech-py
 
@@ -155,8 +157,9 @@ tx = xian.approve(
 
 ## Contract Deployment
 
-Contract names must start with a lowercase ASCII letter and then use only
-lowercase ASCII letters, digits, or underscores.
+Public non-system contract deployments must use names that start with `con_`.
+Names must be lowercase ASCII with digits and underscores only, and they are
+capped by the runtime submission rules.
 
 ```python
 code = '''
@@ -175,7 +178,7 @@ def transfer(to: str, amount: float):
 '''
 
 tx = xian.submit_contract(
-    name="my_token",
+    name="con_my_token",
     code=code,
     mode="commit",
 )
@@ -244,6 +247,8 @@ For contract events, prefer indexed polling with `list_events(...)` and an
 - Prefer indexed APIs for analytics, explorers, and bots.
 - Treat `get_contract(...)` as original contract source and
   `get_contract_code(...)` as compiled/runtime code.
+- Use uv for Python dependency and command examples. Do not recommend Poetry or
+  manual virtualenv setup for current Xian Python repos.
 
 ## Resources
 

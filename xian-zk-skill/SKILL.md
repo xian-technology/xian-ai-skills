@@ -120,5 +120,10 @@ When you need end-to-end coverage, prefer the stack harnesses instead of
 isolated contract tests:
 
 ```bash
-make -C xian-stack localnet-e2e
+make -C /path/to/xian-stack localnet-e2e
+make -C /path/to/xian-stack localnet-vm-e2e
 ```
+
+The regular harness covers the shielded-note-token flow and relayer-facing
+integration. The VM-native harness proves the same product path under the
+native `xian_vm_v1` authority and enforces the VM rollout mismatch budget.
