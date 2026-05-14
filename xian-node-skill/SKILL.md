@@ -241,14 +241,14 @@ For product-level validation, use the heavier harnesses:
 
 ```bash
 make localnet-e2e
-make localnet-vm-e2e
-make localnet-vm-report
+make localnet-parallel-e2e
+make localnet-node-report
 make localnet-validator-governance
 ```
 
-`localnet-e2e` and `localnet-vm-e2e` are stronger signals than "five nodes
+`localnet-e2e` and `localnet-parallel-e2e` are stronger signals than "five nodes
 started" because they exercise contracts, indexing, governance, restart
-convergence, and VM rollout behavior.
+convergence, and runtime-report behavior.
 
 ## Operational Guidance
 

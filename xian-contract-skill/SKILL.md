@@ -174,11 +174,11 @@ Use `ContractingClient` for local contract iteration and unit-style runtime
 tests:
 
 ```python
-from contracting.client import ContractingClient
+from contracting.local import ContractingClient
 
 client = ContractingClient()
 client.submit(name="con_token", code=contract_source)
-token = client.get_contract("con_token")
+token = client.get_contract_proxy("con_token")
 token.transfer(amount=10, to="bob")
 ```
 
@@ -202,14 +202,14 @@ xian = Xian("http://127.0.0.1:26657", wallet=wallet)
 
 result = xian.submit_contract(
     name="con_example",
-    code=contract_source,
+    deployment_artifacts=deployment_artifacts,
     args={"owner": "alice"}  # constructor args if needed
 )
 ```
 
 Under the hood this goes through:
 
-- `submission.submit_contract(name=..., code=..., constructor_args=...)`
+- `submission.submit_contract(name=..., deployment_artifacts=..., constructor_args=...)`
 
 Current important deployment rules:
 

@@ -149,8 +149,8 @@ the full localnet harnesses as well:
 
 ```bash
 make localnet-e2e
-make localnet-vm-e2e
-make localnet-vm-report
+make localnet-parallel-e2e
+make localnet-node-report
 ```
 
 `localnet-e2e` writes artifacts under:

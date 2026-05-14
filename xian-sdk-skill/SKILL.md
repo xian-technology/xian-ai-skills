@@ -98,8 +98,8 @@ xian = Xian("http://127.0.0.1:26657")
 
 balance = xian.get_state("currency", "balances", "some_address")
 allowance = xian.get_state("currency", "approvals", "owner", "spender")
-source = xian.get_contract("currency")
-runtime_code = xian.get_contract_code("currency")
+source = xian.get_contract_source("currency")
+vm_ir = xian.get_contract_ir("currency")
 ```
 
 ### Read-Only Call and Simulation
@@ -245,8 +245,8 @@ For contract events, prefer indexed polling with `list_events(...)` and an
 - Prefer `estimate_chi(...)` over hardcoding chi values.
 - Prefer `approve(...)` and other helper methods when they fit.
 - Prefer indexed APIs for analytics, explorers, and bots.
-- Treat `get_contract(...)` as original contract source and
-  `get_contract_code(...)` as compiled/runtime code.
+- Treat `get_contract_source(...)` as original contract source and
+  `get_contract_ir(...)` as Xian VM IR.
 - Use uv for Python dependency and command examples. Do not recommend Poetry or
   manual virtualenv setup for current Xian Python repos.
 
