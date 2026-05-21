@@ -67,7 +67,7 @@ to.
 | Skill                                                       | Use it for                                                                                                                                  |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`xian-sdk-skill`](./xian-sdk-skill/)                       | Build applications on Xian with the current Python SDK (`xian-tech-py`): tx submission, chi estimation, simulation, deploy, indexed reads. |
-| [`xian-node-skill`](./xian-node-skill/)                     | Operate Xian nodes with the current CLI (`xian-tech-cli`) and stack model: join canonical networks, run validators / service nodes, attach optional layers. |
+| [`xian-node-skill`](./xian-node-skill/)                     | Operate Xian nodes with the current CLI (`xian-tech-cli`) and stack model: join canonical networks, run validators / BDS nodes, attach optional layers. |
 | [`xian-dex-skill`](./xian-dex-skill/)                       | Work with the current Xian DEX: quote through `con_dex`, single-pair flows via `con_dex_helper`, multi-hop router calls, indexed event reads. |
 | [`xian-zk-skill`](./xian-zk-skill/)                         | Work with the current shielded-note privacy stack: deposit / transfer / withdraw, `xian-zk` wallet and proving APIs, relayer tradeoffs.    |
 | [`xian-bds-skill`](./xian-bds-skill/)                       | Use the indexed BDS read surface correctly: blocks, txs, events, state history, `shielded_wallet_history`, BDS snapshot recovery.          |

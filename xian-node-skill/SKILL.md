@@ -1,6 +1,6 @@
 ---
 name: xian-node
-description: Operate current Xian nodes with xian-tech-cli and xian-stack. Use when joining canonical networks, creating private networks, running validators or service nodes, and inspecting runtime health.
+description: Operate current Xian nodes with xian-tech-cli and xian-stack. Use when joining canonical networks, creating private networks, running validators or BDS nodes, and inspecting runtime health.
 ---
 
 # Xian Node Skill
@@ -89,21 +89,21 @@ xian node status validator-1
 xian node endpoints validator-1
 ```
 
-### Service Node Example
+### BDS Node Example
 
 ```bash
-xian network join service-1 \
+xian network join bds-1 \
   --network mainnet \
   --template embedded-backend \
-  --moniker "service-1" \
-  --service-node \
+  --moniker "bds-1" \
+  --enable-bds \
   --enable-dashboard \
   --enable-monitoring \
   --init-node \
   --restore-snapshot
 
-xian node start service-1
-xian node health service-1
+xian node start bds-1
+xian node health bds-1
 ```
 
 ## Local Build Override
@@ -142,7 +142,7 @@ than joining a canonical one.
 
 The node profile can enable:
 
-- `--service-node` for BDS/indexed reads
+- `--enable-bds` for BDS/indexed reads
 - `--enable-dashboard` for the explorer/dashboard service
 - `--enable-monitoring` for Prometheus and Grafana
 - `--enable-intentkit` for the optional `xian-intentkit` sidecar stack
@@ -155,7 +155,7 @@ Example:
 xian network join agent-node \
   --network mainnet \
   --template embedded-backend \
-  --service-node \
+  --enable-bds \
   --enable-dashboard \
   --enable-monitoring \
   --enable-intentkit \
@@ -202,11 +202,11 @@ Use the raw backend only when you are working directly in `xian-stack` and need
 to bypass the higher-level CLI. For operator workflows, use `xian-cli`.
 
 ```bash
-uv run python ./scripts/backend.py start --no-service-node --no-dashboard --no-monitoring
-uv run python ./scripts/backend.py status --no-service-node --no-dashboard --no-monitoring
-uv run python ./scripts/backend.py endpoints --no-service-node --no-dashboard --no-monitoring
-uv run python ./scripts/backend.py health --no-service-node --no-dashboard --no-monitoring
-uv run python ./scripts/backend.py stop --no-service-node --no-dashboard --no-monitoring
+uv run python ./scripts/backend.py start --no-bds-enabled --no-dashboard --no-monitoring
+uv run python ./scripts/backend.py status --no-bds-enabled --no-dashboard --no-monitoring
+uv run python ./scripts/backend.py endpoints --no-bds-enabled --no-dashboard --no-monitoring
+uv run python ./scripts/backend.py health --no-bds-enabled --no-dashboard --no-monitoring
+uv run python ./scripts/backend.py stop --no-bds-enabled --no-dashboard --no-monitoring
 ```
 
 The CLI talks to the backend through the structured request contract
@@ -254,7 +254,7 @@ convergence, and runtime-report behavior.
 
 - Prefer canonical manifest-backed images for real networks.
 - Use `local_build` only when you intentionally need unreleased local code.
-- Use service-node mode when you need BDS, GraphQL, explorers, or indexed bot
+- Use BDS-enabled nodes when you need BDS, GraphQL, explorers, or indexed bot
   reads.
 - Use the dashboard for human inspection, not as the only source of truth.
 - Use `node health` and logs for automated checks and incident triage.

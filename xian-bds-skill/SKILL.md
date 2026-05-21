@@ -54,10 +54,9 @@ shielded = xian.list_shielded_wallet_history("tag-value", limit=100)
 If an MCP client is available, prefer typed MCP tools over a generic GraphQL
 escape hatch for the same reason: clearer schemas and safer agent behavior.
 
-## Service-Node Requirement
+## BDS Requirement
 
-The indexed surface is meant to be consumed from a service node or another node
-with BDS enabled.
+The indexed surface is meant to be consumed from a node with BDS enabled.
 
 Operator-side posture:
 
