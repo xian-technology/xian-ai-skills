@@ -303,7 +303,7 @@ Treat them as normal routing/market validation failures, not transport errors.
 
 Today, the clean autonomous posture is polling-based:
 
-1. run against a service node with indexed reads
+1. run against a node with BDS enabled for indexed reads
 2. poll `Swap` / `Sync` / token events with an `after_id` cursor
 3. calculate the trade off-chain
 4. approve and execute the trade
