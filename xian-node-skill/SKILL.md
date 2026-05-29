@@ -48,7 +48,7 @@ Default production posture:
 # Join a canonical network
 xian network join validator-1 \
   --network mainnet \
-  --template embedded-backend \
+  --template consortium-5 \
   --moniker "validator-1" \
   --generate-validator-key \
   --init-node \
@@ -78,7 +78,7 @@ xian keys validator generate --out-dir ./keys/validator-1
 ```bash
 xian network join validator-1 \
   --network mainnet \
-  --template embedded-backend \
+  --template consortium-5 \
   --moniker "validator-1" \
   --generate-validator-key \
   --init-node \
@@ -94,7 +94,7 @@ xian node endpoints validator-1
 ```bash
 xian network join bds-1 \
   --network mainnet \
-  --template embedded-backend \
+  --template single-node-indexed \
   --moniker "bds-1" \
   --enable-bds \
   --enable-dashboard \
@@ -114,7 +114,7 @@ published canonical image.
 ```bash
 xian network join dev-validator \
   --network mainnet \
-  --template embedded-backend \
+  --template consortium-5 \
   --moniker "dev-validator" \
   --node-image-mode local_build \
   --generate-validator-key \
@@ -154,7 +154,7 @@ Example:
 ```bash
 xian network join agent-node \
   --network mainnet \
-  --template embedded-backend \
+  --template single-node-indexed \
   --enable-bds \
   --enable-dashboard \
   --enable-monitoring \
