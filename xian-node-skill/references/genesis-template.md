@@ -1,10 +1,16 @@
 # Genesis File Template
 
-Prefer the current CLI or stack generators for normal work:
+Prefer the current CLI or stack generators for normal work. `xian network
+create` can render a local genesis from a bundle and validator material, and
+`xian-stack` localnet init creates multi-node development homes under
+`.localnet/`.
 
 ```bash
 xian network create localnet-1 --chain-id xian-localnet-1 \
-  --template single-node-dev --generate-validator-key --init-node
+  --template single-node-dev \
+  --bootstrap-node localnet-1 \
+  --generate-validator-key \
+  --init-node
 
 # or, from xian-stack, for a multi-node dev network
 LOCALNET_NODES=5 make localnet-init
@@ -68,7 +74,7 @@ CometBFT genesis material. A genesis file defines:
 | Field | Description |
 |-------|-------------|
 | `genesis_time` | ISO 8601 timestamp for chain start |
-| `chain_id` | Unique network identifier (e.g., `xian-mainnet-1`) |
+| `chain_id` | Unique network identifier (e.g., `xian-testnet-1`) |
 | `validators` | Initial validator set with their public keys and voting power |
 
 ### Validator Entry
@@ -133,9 +139,12 @@ For a network with multiple validators:
 
 Equal voting power (`"power": "10"`) means each validator has equal influence. Adjust for weighted voting.
 
-## Initial State (app_state)
+## Initial State (`app_state`)
 
-For Xian, `app_state` can include initial contract deployments and balances. Leave empty `{}` for a fresh chain, or pre-populate with contracts.
+For Xian, `app_state` can include initial contract deployments, balances,
+validator policy, governance policy, privacy metadata, and other chain assets.
+Prefer committed genesis bundles and `xian network create` over hand-writing
+this state.
 
 ## Deploying Genesis
 

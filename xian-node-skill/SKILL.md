@@ -1,11 +1,15 @@
 ---
 name: xian-node
-description: Operate current Xian nodes with xian-tech-cli and xian-stack. Use when joining canonical networks, creating private networks, running validators or BDS nodes, and inspecting runtime health.
+description: Operate current Xian nodes with xian-tech-cli and xian-stack. Use when creating or joining manifest-backed networks, running validator or indexed/BDS profiles, managing optional sidecars, and inspecting runtime health.
 ---
 
 # Xian Node Skill
 
-Use this skill for the current Xian operator flow.
+Use this skill for the current Xian operator flow. The current implementation is
+manifest/profile driven: `xian network create` and `xian network join` write
+operator artifacts, `xian node init` materializes the CometBFT home, and
+`xian node start|stop|status|health|endpoints` delegates runtime work to
+`xian-stack`.
 
 Important packaging detail:
 
@@ -32,39 +36,52 @@ Xian node operations are split across:
 
 - `xian-cli` for operator workflows and node profiles
 - `xian-stack` for the runtime backend and Docker services
-- canonical network manifests for pinned release images and network metadata
+- `xian-configs` network manifests and templates for pinned release images,
+  release provenance, default services, and network metadata
 - `xian-abci` for deterministic node-home/config rendering
 
 Default production posture:
 
 - canonical networks use manifest-pinned registry images
-- development/private networks can opt into `local_build`
+- development/private networks default to or can opt into `local_build`
+- templates prefill profile defaults; explicit CLI flags override templates
 - Python package workflows use uv. Do not introduce Poetry, Pipenv, or
   manually-managed virtualenv instructions.
+- `--restore-snapshot` is only valid when a snapshot URL is configured on the
+  network/profile or passed with `--snapshot-url`.
 
 ## Quick Reference
 
 ```bash
-# Join a canonical network
+# Inspect current templates and generate validator key material
+xian network template list
+xian keys validator generate --out-dir ./keys/validator-1
+
+# Join a manifest-backed network
 xian network join validator-1 \
-  --network mainnet \
+  --network testnet \
   --template consortium-5 \
   --moniker "validator-1" \
-  --generate-validator-key \
-  --init-node \
-  --restore-snapshot
+  --validator-key-ref ./keys/validator-1/validator_key_info.json \
+  --init-node
 
 # Start and inspect
 xian node start validator-1
 xian node status validator-1
 xian node endpoints validator-1
 xian node health validator-1
+xian doctor validator-1
 
 # Stop
 xian node stop validator-1
 ```
 
-## Join Mainnet or Testnet
+Use the network names that are present in the operator's `xian-configs`
+checkout or passed via `--network-manifest`. Current examples use `testnet` and
+`devnet`; replace them with `mainnet` only when that manifest exists in the
+active configs source.
+
+## Join A Manifest-Backed Network
 
 Generate standalone validator material through the CLI when you need explicit
 key custody before creating a profile:
@@ -77,12 +94,12 @@ xian keys validator generate --out-dir ./keys/validator-1
 
 ```bash
 xian network join validator-1 \
-  --network mainnet \
+  --network testnet \
   --template consortium-5 \
   --moniker "validator-1" \
-  --generate-validator-key \
-  --init-node \
-  --restore-snapshot
+  --validator-key-ref ./keys/validator-1/validator_key_info.json \
+  --stack-dir ../xian-stack \
+  --init-node
 
 xian node start validator-1
 xian node status validator-1
@@ -93,17 +110,31 @@ xian node endpoints validator-1
 
 ```bash
 xian network join bds-1 \
-  --network mainnet \
+  --network testnet \
   --template single-node-indexed \
   --moniker "bds-1" \
   --enable-bds \
   --enable-dashboard \
   --enable-monitoring \
-  --init-node \
-  --restore-snapshot
+  --stack-dir ../xian-stack \
+  --init-node
 
 xian node start bds-1
 xian node health bds-1
+```
+
+If a profile should bootstrap from a signed or trusted snapshot, pass the
+snapshot explicitly or rely on one in the manifest/profile:
+
+```bash
+xian network join validator-1 \
+  --network testnet \
+  --template consortium-5 \
+  --validator-key-ref ./keys/validator-1/validator_key_info.json \
+  --snapshot-url https://example.invalid/xian-snapshot.tar.gz \
+  --snapshot-signing-key REPLACE_WITH_TRUSTED_ED25519_PUBLIC_KEY \
+  --init-node \
+  --restore-snapshot
 ```
 
 ## Local Build Override
@@ -113,7 +144,7 @@ published canonical image.
 
 ```bash
 xian network join dev-validator \
-  --network mainnet \
+  --network testnet \
   --template consortium-5 \
   --moniker "dev-validator" \
   --node-image-mode local_build \
@@ -128,6 +159,7 @@ xian network template list
 xian network create localnet-1 \
   --chain-id xian-localnet-1 \
   --template single-node-dev \
+  --bootstrap-node localnet-1 \
   --generate-validator-key \
   --init-node
 
@@ -153,16 +185,25 @@ Example:
 
 ```bash
 xian network join agent-node \
-  --network mainnet \
+  --network testnet \
   --template single-node-indexed \
   --enable-bds \
   --enable-dashboard \
   --enable-monitoring \
   --enable-intentkit \
   --enable-dex-automation \
-  --init-node \
-  --restore-snapshot
+  --init-node
 ```
+
+Runtime tuning that belongs in the profile is also exposed here:
+
+- `--enable-pruning` / `--blocks-to-keep`
+- `--simulation-enabled`, `--simulation-max-concurrency`,
+  `--simulation-timeout-ms`, and `--simulation-max-chi`
+- `--parallel-execution-enabled`, `--parallel-execution-workers`, and
+  `--parallel-execution-min-transactions`
+- `--app-log-level`, `--app-log-json`, `--app-log-rotation-hours`, and
+  `--app-log-retention-days`
 
 ## What `node status` Should Tell You
 
@@ -182,6 +223,7 @@ Expect it to surface:
 - dashboard / monitoring / intentkit reachability when enabled
 - BDS, DEX automation, and other optional sidecar reachability when enabled
 - effective snapshot and node-home initialization posture
+- latest block age so stalled nodes are visible even when RPC responds
 
 ## Endpoints and Health
 
@@ -193,20 +235,31 @@ xian node health validator-1
 Use:
 
 - `node endpoints` for local URLs
-- `node health` for machine-readable checks
+- `node health` for machine-readable live checks
 - `node status` for the operator summary
+- `doctor` for broader workspace, profile, live-health, and recovery preflight
+
+```bash
+xian doctor validator-1
+xian doctor validator-1 --skip-live-checks
+xian snapshot restore validator-1
+```
+
+Only run `snapshot restore` when the effective network/profile has a snapshot
+URL or you pass one explicitly.
 
 ## Direct Stack Backend
 
 Use the raw backend only when you are working directly in `xian-stack` and need
-to bypass the higher-level CLI. For operator workflows, use `xian-cli`.
+to bypass the higher-level CLI. For operator workflows, use `xian-cli`. The CLI
+uses `--enable-bds`; the raw backend uses `--bds-enabled`.
 
 ```bash
-uv run python ./scripts/backend.py start --no-bds-enabled --no-dashboard --no-monitoring
-uv run python ./scripts/backend.py status --no-bds-enabled --no-dashboard --no-monitoring
-uv run python ./scripts/backend.py endpoints --no-bds-enabled --no-dashboard --no-monitoring
-uv run python ./scripts/backend.py health --no-bds-enabled --no-dashboard --no-monitoring
-uv run python ./scripts/backend.py stop --no-bds-enabled --no-dashboard --no-monitoring
+python3 ./scripts/backend.py start --no-bds-enabled --no-dashboard --no-monitoring
+python3 ./scripts/backend.py status --no-bds-enabled --no-dashboard --no-monitoring
+python3 ./scripts/backend.py endpoints --no-bds-enabled --no-dashboard --no-monitoring
+python3 ./scripts/backend.py health --no-bds-enabled --no-dashboard --no-monitoring
+python3 ./scripts/backend.py stop --no-bds-enabled --no-dashboard --no-monitoring
 ```
 
 The CLI talks to the backend through the structured request contract
@@ -233,7 +286,7 @@ For a clean five-node topology smoke in `xian-stack`:
 
 ```bash
 LOCALNET_NODES=5 make localnet-init localnet-build localnet-up
-uv run python ./scripts/backend.py localnet-status --timeout-seconds 2
+python3 ./scripts/backend.py localnet-status --timeout-seconds 2
 make localnet-down
 ```
 
