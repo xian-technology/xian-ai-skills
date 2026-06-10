@@ -103,7 +103,7 @@ same change set.
 - [`xian-technology/xian-contracting`](https://github.com/xian-technology/xian-contracting)
 - [`xian-technology/xian-abci`](https://github.com/xian-technology/xian-abci)
 
-## Related Repos
+## Related Docs
 
 - [`../xian-ai-guides/README.md`](../xian-ai-guides/README.md) — context files (Contracting reference, BDS GraphQL schema) for general LLM use
 - [`../xian-mcp-server/README.md`](../xian-mcp-server/README.md) — MCP server that exposes Xian to AI assistants programmatically
