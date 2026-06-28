@@ -195,21 +195,24 @@ For real network deployment, use the public submission path.
 With `xian-py`:
 
 ```python
+from pathlib import Path
+
 from xian_py import Xian, Wallet
 
 wallet = Wallet("your_private_key")
 xian = Xian("http://127.0.0.1:26657", wallet=wallet)
+contract_source = Path("contracts/con_example.s.py").read_text()
 
 result = xian.submit_contract(
     name="con_example",
-    deployment_artifacts=deployment_artifacts,
+    code=contract_source,
     args={"owner": "alice"}  # constructor args if needed
 )
 ```
 
 Under the hood this goes through:
 
-- `submission.submit_contract(name=..., deployment_artifacts=..., constructor_args=...)`
+- `submission.submit_contract(name=..., code=..., constructor_args=...)`
 
 Current important deployment rules:
 
