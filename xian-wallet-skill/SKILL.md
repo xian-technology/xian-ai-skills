@@ -32,13 +32,17 @@ Current wallet capabilities include:
 - network preset management with active RPC and dashboard URLs
 - watched assets with configurable decimals
 - direct token sends
+- in-wallet DEX swap / trade flows
 - advanced contract-call flows
+- indexed activity/history reads with local fallback behavior
 - shielded `state_snapshot` storage, export, removal, and inclusion in wallet
   backup exports
 - indexed-history checks to detect stale shielded snapshots
+- lock/unlock flows and encrypted backup export/import
+- WalletConnect dapp sessions on mobile
 
-They are still missing richer mainstream-wallet layers such as full transaction
-history and portfolio views.
+Deeper portfolio analytics can still be product work, but do not describe the
+current wallets as lacking activity/history altogether.
 
 ## Browser Wallet Model
 
@@ -48,6 +52,8 @@ The browser wallet is provider-first:
 - the background worker holds custody
 - approvals survive MV3 worker suspension
 - approval UIs should lead with structured summaries before raw payloads
+- the extension includes wallet-owned sends, swaps, watched assets, and review
+  activity in addition to dapp-provider requests
 
 Important provider approval kinds:
 
@@ -66,9 +72,12 @@ approval summary/warning logic.
 The mobile wallet is app-first:
 
 - direct send flow for token `transfer`
+- trade flow for wallet-owned DEX swaps
 - advanced transaction screen for generic contract calls
 - network status badge that checks current RPC reachability
 - explorer links built from the configured dashboard URL
+- WalletConnect sessions for dapp-originated requests
+- encrypted backup import/export and lock/unlock behavior
 
 If a feature needs arbitrary contract execution, the current product answer is
 the advanced transaction flow, not a new one-off screen by default.
@@ -177,14 +186,26 @@ Otherwise prefer:
 Use the repo-native checks for the affected wallet:
 
 ```bash
-# Browser wallet
-npm run typecheck
+# If wallet work depends on sibling xian-js changes
+cd ../xian-js
+npm install
 npm run build
-npm test
+
+# Browser wallet
+cd ../xian-wallet-browser
+npm install
+npm run validate
+
+# Browser extension smoke / visual checks when UI behavior changes
+npx playwright install chromium
+npm run test:browser --workspace xian-wallet-extension
+npm run test:visual --workspace xian-wallet-extension
 
 # Mobile wallet
+cd ../xian-wallet-mobile
+npm install
 npm run typecheck
-npm test
+npm run test
 ```
 
 Both wallet repos currently use npm with committed `package-lock.json` files.

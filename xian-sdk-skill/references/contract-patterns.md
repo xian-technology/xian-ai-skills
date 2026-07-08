@@ -209,11 +209,10 @@ def do_work(value: int):
 
 ## Time-based Logic
 
-Use `now`, not `datetime.datetime.now()`.
+Use `now`, not `datetime.datetime.now()`. Do not import `datetime`; the runtime
+provides the `datetime` binding used for `datetime.timedelta(...)`.
 
 ```python
-import datetime
-
 lock_until = Hash()
 
 @export

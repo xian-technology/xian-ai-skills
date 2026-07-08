@@ -25,6 +25,8 @@ Use BDS-backed reads for:
 - paginated block and transaction history
 - event queries by contract / event name
 - state history and per-tx/per-block state inspection
+- token contract discovery and per-address token balance inventory
+- DEX candle / market-data reads
 - developer reward summaries
 - shielded wallet sync and shielded note rediscovery
 
@@ -37,6 +39,8 @@ Do not use it for:
 
 Use the typed `xian-tech-py` methods rather than hand-rolled GraphQL or raw
 HTTP calls when possible.
+Use DEX candle `market_id` values reported by the indexer, often pair id values;
+do not invent token-pair strings.
 
 ```python
 from xian_py import Xian
@@ -49,6 +53,10 @@ txs = xian.list_txs_by_sender("sender_key", limit=50)
 events = xian.list_events("con_pairs", "Swap", limit=25)
 history = xian.get_state_history("currency.balances:alice", limit=25)
 shielded = xian.list_shielded_wallet_history("tag-value", limit=100)
+token_contracts = xian.get_token_contracts(limit=20)
+token_balances = xian.get_token_balances("owner_key", include_zero=False)
+shielded_tags = xian.list_shielded_output_tags("tag-value", limit=100)
+dex_candles = xian.list_dex_candles(market_id="7", interval="1m", limit=100)
 ```
 
 If an MCP client is available, prefer typed MCP tools over a generic GraphQL
@@ -95,6 +103,8 @@ history.
 ## Implementation Guidance
 
 - Prefer `shielded_wallet_history` for wallet sync when available.
+- Prefer typed SDK methods for token inventory, shielded tags, and DEX candles
+  instead of hand-building indexer queries.
 - Use lower-level event/tag/tx scans only as compatibility fallback.
 - Version and document wallet-facing indexed read surfaces deliberately.
 - Treat retention of encrypted payload blobs and snapshot export/import as part

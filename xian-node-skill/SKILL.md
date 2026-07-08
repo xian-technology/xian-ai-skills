@@ -78,8 +78,9 @@ xian node stop validator-1
 
 Use the network names that are present in the operator's `xian-configs`
 checkout or passed via `--network-manifest`. Current examples use `testnet` and
-`devnet`; replace them with `mainnet` only when that manifest exists in the
-active configs source.
+`devnet`. The `mainnet` manifest can exist as launch-planning/rehearsal material;
+do not make it a public default or add public endpoints unless an accepted launch
+manifest and launch gates explicitly say to do so.
 
 ## Join A Manifest-Backed Network
 
@@ -180,6 +181,8 @@ The node profile can enable:
 - `--enable-intentkit` for the optional `xian-intentkit` sidecar stack
 - `--enable-dex-automation` for the optional deterministic DEX automation
   sidecar
+- `--enable-shielded-relayer` for the optional proof-bound shielded submission
+  relayer
 
 Example:
 
@@ -192,6 +195,7 @@ xian network join agent-node \
   --enable-monitoring \
   --enable-intentkit \
   --enable-dex-automation \
+  --enable-shielded-relayer \
   --init-node
 ```
 
@@ -202,6 +206,8 @@ Runtime tuning that belongs in the profile is also exposed here:
   `--simulation-timeout-ms`, and `--simulation-max-chi`
 - `--parallel-execution-enabled`, `--parallel-execution-workers`, and
   `--parallel-execution-min-transactions`
+- `--block-policy-mode` and `--block-policy-interval`
+- `--tx-fee-mode`, `--free-tx-max-chi`, and `--free-block-max-chi`
 - `--app-log-level`, `--app-log-json`, `--app-log-rotation-hours`, and
   `--app-log-retention-days`
 
@@ -296,7 +302,7 @@ For product-level validation, use the heavier harnesses:
 make localnet-e2e
 make localnet-parallel-e2e
 make localnet-node-report
-make localnet-validator-governance
+make localnet-protocol-safety
 ```
 
 `localnet-e2e` and `localnet-parallel-e2e` are stronger signals than "five nodes

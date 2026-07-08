@@ -1,6 +1,6 @@
 ---
 name: xian-governance
-description: Work with Xian's current validator governance and operator lifecycle. Use when changing membership flows, delegation behavior, governance/state-patch actions, evidence handling, or the localnet validator-governance harness.
+description: Work with Xian's current validator governance and operator lifecycle. Use when changing membership flows, delegation behavior, governance/state-patch actions, evidence handling, or the localnet protocol-safety harness.
 ---
 
 # Xian Governance Skill
@@ -64,20 +64,20 @@ xian node status <profile>
 xian doctor <profile>
 ```
 
-## Governance Validation Harness
+## Protocol Safety Validation Harness
 
 For live validator/delegation/governance validation, prefer the focused
 `xian-stack` harness instead of piecemeal manual testing:
 
 ```bash
-make localnet-validator-governance
+make localnet-protocol-safety
 ```
 
 This exercises a real 5-validator localnet seeded from canonical `testnet`
 configuration.
 
 The backend command surface also exposes the same flow through
-`localnet-validator-governance` with explicit flags such as:
+`localnet-protocol-safety` with explicit flags such as:
 
 - `--seed`
 - `--nodes`
@@ -91,11 +91,12 @@ The backend command surface also exposes the same flow through
 
 Prefer the Make target unless you specifically need backend-level overrides.
 The Make target already invokes the required uv-backed Python projects for the
-sibling workspace.
+sibling workspace. `localnet-validator-governance` is retained only as a
+compatibility alias for older callers.
 
 ## What The Harness Covers
 
-The validator-governance runner is the default validation path when changing:
+The protocol-safety runner is the default validation path when changing:
 
 - governance proposal and voting behavior
 - governance state-patch lifecycle
@@ -107,14 +108,14 @@ The validator-governance runner is the default validation path when changing:
 - jailing, slashing, and unjailing
 - real CometBFT `DUPLICATE_VOTE` evidence handling
 
-If your change affects these areas and you did not run the focused governance
-runner, your validation is probably incomplete.
+If your change affects these areas and you did not run the focused
+protocol-safety runner, your validation is probably incomplete.
 
 ## Artifacts And Local Keys
 
-The local governance runner writes artifacts under:
+The local protocol-safety runner writes artifacts under:
 
-- `.artifacts/localnet-validator-governance/<run-id>/`
+- `.artifacts/localnet-protocol-safety/<run-id>/`
 
 It also relies on localnet validator key material in:
 
@@ -141,7 +142,7 @@ handle them like production credentials.
 Use the focused governance runner for governance-specific end-to-end changes:
 
 ```bash
-make localnet-validator-governance
+make localnet-protocol-safety
 ```
 
 For broader stack changes that might affect validator behavior indirectly, run
@@ -157,9 +158,9 @@ make localnet-node-report
 
 - `.artifacts/localnet-e2e/<run-id>/`
 
-`localnet-validator-governance` writes artifacts under:
+`localnet-protocol-safety` writes artifacts under:
 
-- `.artifacts/localnet-validator-governance/<run-id>/`
+- `.artifacts/localnet-protocol-safety/<run-id>/`
 
 For operator lifecycle work, also check the CLI surface directly:
 

@@ -1,73 +1,112 @@
 ---
 name: xian-contract
-description: Author and validate current Xian smart contracts. Use when creating or updating contracts, token contracts, contract packages, runtime-facing tests, or deployment flows on Xian.
+description: Write valid Xian smart contract source and tests from a product spec. Use when creating a new Xian contract, turning business rules into contract code, choosing storage/events/time/numeric patterns, writing ContractingClient tests, or preparing source-backed deployment snippets.
 ---
 
 # Xian Contract Skill
 
-Use this skill for current Xian contract authoring work.
+Use this skill to write new Xian contract source that passes the current
+`xian-contracting` linter/runtime and is practical to test locally.
 
-## Core Split
+If the task is about changing the compiler, runtime, linter, or maintained
+contract package infrastructure rather than writing a contract, read the owning
+repo's `AGENTS.md`/`README.md` and work in that repo directly.
 
-Keep these roles separate:
+## Default Workflow
 
-- `xian-contracting`
-  - runtime, compiler, storage semantics, metering, and lint rules
-- `xian-contracts`
-  - curated contract packages built on top of that runtime
-- `xian-linter`
-  - standalone lint wrapper around the runtime rule surface
+1. Convert the request into a contract spec:
+   - contract name, normally `con_*` for user-deployed contracts
+   - actors and permissions
+   - exported functions and argument types
+   - state variables and hash keys
+   - invariants and failure messages
+   - events that wallets, indexers, or bots should consume
+   - time, randomness, cross-contract, or token-standard needs
+2. Read `references/contract-authoring-rules.md` before writing non-trivial
+   source, and whenever the contract uses time, events, foreign state,
+   cross-contract calls, randomness, or complex stored values.
+3. Write the smallest explicit contract that satisfies the spec.
+4. Write local tests with `ContractingClient` before adding deployment code.
+5. If the user needs deployment, use source-backed deployment through
+   `xian-py` and do not introduce public RPC defaults.
 
-If you are changing execution semantics, you are in `xian-contracting`.
-If you are authoring or hardening a maintained contract package, you are in
-`xian-contracts`.
+## Contract Shape
 
-## Contract Source Rules
-
-Xian contracts use Python syntax, but they are not general Python.
-
-Important authoring constraints enforced by the linter/runtime:
-
-- only `@construct` and `@export` are valid decorators
-- at most one `@construct`
-- every contract must expose at least one `@export`
-- exported arguments must have type annotations
-- allowed annotation types are limited to:
-  - `Any`
-  - `bool`
-  - `datetime.datetime`
-  - `datetime.timedelta`
-  - `dict`
-  - `float`
-  - `int`
-  - `list`
-  - `str`
-- imports must stay at module level
-- `from ... import ...` is not allowed; use plain `import`
-- classes, async functions, nested functions, lambdas, `with`, `try`, and
-  similar general-Python features are not part of the contract model
-
-Do not write contracts as if they were ordinary backend Python modules.
-
-## State Model
-
-The normal authored storage surface is:
-
-- `Variable()`
-- `Hash()`
-- `ForeignVariable()`
-- `ForeignHash()`
-- `LogEvent(...)`
-
-Keep contract state explicit and deterministic. Avoid clever indirection when a
-plain `Variable` or `Hash` will do.
-
-## Event Style
-
-Use the modern positional `LogEvent` style:
+Start from this structure and add only the exports the spec needs:
 
 ```python
-TransferEvent = LogEvent(
+OwnerChanged = LogEvent(
+    "OwnerChanged",
+    {
+        "old_owner": {"type": str, "idx": True},
+        "new_owner": {"type": str, "idx": True},
+    },
+)
+
+owner = Variable()
+
+@construct
+def seed(initial_owner: str = ""):
+    if initial_owner == "":
+        owner.set(ctx.caller)
+    else:
+        owner.set(initial_owner)
+
+def require_owner():
+    assert ctx.caller == owner.get(), "Only owner"
+
+@export
+def transfer_ownership(new_owner: str):
+    require_owner()
+    assert new_owner != "", "Owner required"
+    old_owner = owner.get()
+    owner.set(new_owner)
+    OwnerChanged({"old_owner": old_owner, "new_owner": new_owner})
+
+@export
+def get_owner() -> str:
+    return owner.get()
+```
+
+Keep helper functions top-level and undecorated. Use `assert` for contract
+guards. Prefer clear failure messages because users and bots will see them.
+
+## Hard Rules To Apply While Writing
+
+- Do not import ordinary Python stdlib modules. Runtime names such as
+  `datetime`, `decimal`, `random`, `hashlib`, `crypto`, `importlib`, `now`,
+  `block_num`, and `block_hash` are injected.
+- Use only `@construct`, `@export`, or `@export(typecheck=True|False)`.
+- Use at most one decorator per function and at most one `@construct`.
+- Include at least one `@export`.
+- Annotate every exported argument.
+- Keep helper functions top-level. Do not write classes, async functions,
+  lambdas, nested functions, `try`, `with`, generators, or `from ... import`.
+- Do not use names that start or end with `_`.
+- Do not use semicolons or one-line compound statements.
+- Do not use `in` with `Hash`; read the key and compare with `None` or the
+  configured default value.
+- Do not pass `contract=` or `name=` to `Variable`, `Hash`, or `LogEvent`.
+- Keep hash keys free of `:` and `.`, and keep return payloads small.
+
+## State And Events
+
+Use explicit storage declarations:
+
+```python
+counter = Variable(default_value=0)
+balances = Hash(default_value=0)
+metadata = Hash()
+```
+
+Use `ForeignVariable` and `ForeignHash` only for read-only state from another
+contract. Use `importlib.import_module(...)` when you need to call another
+contract export.
+
+Prefer `LogEvent("Name", params)` with at most three indexed parameters:
+
+```python
+Transfer = LogEvent(
     "Transfer",
     {
         "from": {"type": str, "idx": True},
@@ -77,162 +116,100 @@ TransferEvent = LogEvent(
 )
 ```
 
-Do not use the older keyword-heavy shape:
+Emit every declared field and no extra fields:
 
 ```python
-LogEvent(event="Transfer", params={...})
+Transfer({"from": ctx.caller, "to": to, "amount": amount})
 ```
 
-For authored contracts, the normal form is `LogEvent("EventName", params)`.
-Use explicit `contract=` / `name=` only when you genuinely need a different
-storage/event binding, such as system-contract internals.
+## Numbers, Time, And Randomness
 
-## Token Contracts
+- Use `float` for user-facing decimal amounts. Xian executes those values as
+  deterministic decimal-backed values, not binary floating point.
+- Use `now` for chain time. Do not call wall-clock APIs.
+- On on-demand networks, time advances only when blocks are produced.
+- Use `datetime.timedelta(...)` directly when needed; do not import
+  `datetime`.
+- Use `random.seed()` before deterministic random helpers, and only use them
+  for low-stakes/game-like behavior. They are not secret randomness.
 
-For fungible tokens, target the current XSC001 shape.
+## Local Tests
 
-Current required surface:
-
-- storage:
-  - `balances`
-  - `approvals`
-  - `metadata`
-- exports:
-  - `change_metadata(key, value)`
-  - `transfer(amount, to)`
-  - `approve(amount, to)`
-  - `transfer_from(amount, to, main_account)`
-  - `balance_of(address)`
-- required metadata fields:
-  - `token_name`
-  - `token_symbol`
-  - `token_logo_url`
-  - `token_logo_svg`
-  - `token_website`
-
-Current notes:
-
-- the XSC001 checker does not require `metadata["operator"]`
-- current user-facing tokens often still expose additional helpers such as
-  `allowance(...)`, `get_metadata()`, `total_supply`, or operator rotation
-- interface compliance is not the same as economic safety
-
-If you are building a fungible token, start from current XSC001 expectations,
-not from older ad hoc token clones.
-
-## XSC002 And XSC003 Reality
-
-Be precise here:
-
-- legacy `currency.s.py` still contains permit logic labeled `XSC002`
-- legacy streaming logic labeled `XSC003` exists historically and has since
-  been extracted into the `stream-payments` package
-- there are not separate curated `xsc002` / `xsc003` contract-standard packages
-  in `xian-contracts` today
-
-So:
-
-- treat XSC001 as the current canonical fungible-token target
-- treat permit/streaming compatibility as explicit feature work, not as an
-  assumed default standard layer
-
-## Package Layout In `xian-contracts`
-
-For maintained contract packages, follow the repo layout exactly:
-
-- one package per contract or tightly coupled contract system
-- `README.md`
-- `src/`
-- `tests/`
-- at least one `src/con_*.py` entrypoint
-
-Keep package maturity explicit: `curated`, `candidate`, or `experimental`.
-Do not present exploratory contracts as if they were production-ready.
-
-## Validation
-
-For package work in `xian-contracts`, start with:
-
-```bash
-uv sync --group dev
-uv run python scripts/validate_contracts.py
-uv run pytest
-```
-
-Use package-local tests when narrowing the loop:
-
-```bash
-uv run pytest contracts/xsc001/tests/test_xsc001.py
-```
-
-For runtime/lint changes in `xian-contracting` or `xian-linter`, run the repo's
-own test surface rather than assuming `xian-contracts` coverage is enough.
-
-## Local Testing
-
-Use `ContractingClient` for local contract iteration and unit-style runtime
-tests:
-
-```python
-from contracting.local import ContractingClient
-
-client = ContractingClient()
-client.submit(name="con_token", code=contract_source)
-token = client.get_contract_proxy("con_token")
-token.transfer(amount=10, to="bob")
-```
-
-This is the right tool for:
-
-- fast contract behavior tests
-- local storage assertions
-- package-local unit tests
-
-## Network Deployment
-
-For real network deployment, use the public submission path.
-
-With `xian-py`:
+For a standalone contract, generate a focused test around the public exports and
+important invariants:
 
 ```python
 from pathlib import Path
 
-from xian_py import Xian, Wallet
+import pytest
+from contracting.local import ContractingClient
+
+CONTRACT = Path("contracts/con_example.s.py").read_text()
+
+@pytest.fixture
+def client():
+    c = ContractingClient(signer="alice")
+    c.submit(CONTRACT, name="con_example")
+    return c
+
+def test_owner_can_transfer_ownership(client):
+    contract = client.get_contract_proxy("con_example")
+    contract.transfer_ownership(new_owner="bob")
+    assert contract.get_owner() == "bob"
+
+def test_non_owner_rejected(client):
+    contract = client.get_contract_proxy("con_example")
+    with pytest.raises(AssertionError):
+        contract.transfer_ownership(new_owner="mallory", signer="mallory")
+```
+
+When the contract calls another contract, submit a minimal dependency contract
+in the fixture before submitting the contract under test.
+
+## Deployment Snippet
+
+Only add deployment code when the user asks for it. Use source-backed
+deployment:
+
+```python
+from pathlib import Path
+
+from xian_py import Wallet, Xian
 
 wallet = Wallet("your_private_key")
 xian = Xian("http://127.0.0.1:26657", wallet=wallet)
-contract_source = Path("contracts/con_example.s.py").read_text()
+source = Path("contracts/con_example.s.py").read_text()
 
-result = xian.submit_contract(
+tx = xian.deploy_contract(
     name="con_example",
-    code=contract_source,
-    args={"owner": "alice"}  # constructor args if needed
+    source=source,
+    args={"initial_owner": wallet.public_key},
+    mode="checktx",
+    wait_for_tx=True,
 )
 ```
 
-Under the hood this goes through:
+Do not hardcode public RPC endpoints or public chain IDs in examples.
 
-- `submission.submit_contract(name=..., code=..., constructor_args=...)`
+## Final Checklist
 
-Current important deployment rules:
+Before handing back contract code:
 
-- non-`sys` deployments must use names starting with `con_`
-- names must be lowercase ASCII with digits/underscores only
-- names are capped at 64 characters
-- source size is capped by the runtime submission limit
-- contract factories should also deploy through `submission.submit_contract(...)`
+- Check every exported argument is annotated with an allowed type.
+- Check every storage declaration is explicit and module-level.
+- Check all writes are permissioned or intentionally public.
+- Check every external call has a clear trust/permission assumption.
+- Check events match the fields consumers need.
+- Check time logic is evaluated during transactions, not assumed to run in the
+  background.
+- Check the contract has local tests for success paths and rejected paths.
+- Check source-backed deployment examples use `deploy_contract(...)`.
 
-Do not bypass `submission` as the public deployment boundary.
+## Resources
 
-## Implementation Guidance
-
-- prefer simple explicit state and exported methods over clever metaprogramming
-- use current contract packages as pattern sources before inventing new local
-  conventions
-- when building a token, decide explicitly whether you are doing:
-  - plain XSC001 fungible token behavior
-  - fee-on-transfer / reflection behavior
-  - shielded-note behavior
-- keep contract docs and package status in sync with reality
-- when changing a maintained package, add or update package-local tests in the
-  same change
+- `references/contract-authoring-rules.md` - current Xian contract writing rules
+  distilled from `xian-ai-guides/contracting-guide.md` and reconciled with the
+  current `xian-contracting` linter/runtime.
+- [xian-technology/xian-contracting](https://github.com/xian-technology/xian-contracting)
+- [xian-technology/xian-contracts](https://github.com/xian-technology/xian-contracts)
+- [xian-technology/xian-py](https://github.com/xian-technology/xian-py)

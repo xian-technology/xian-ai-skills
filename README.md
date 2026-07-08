@@ -53,6 +53,9 @@ to.
 - **CLI invocation is explicit.** Installed operator flows use the `xian`
   console command. Local source-tree flows use `uv run --project
   /path/to/xian-cli xian ...`.
+- **Launch defaults stay conservative.** Draft mainnet manifests and privacy
+  catalogs are launch-planning inputs, not permission to add public RPC defaults,
+  public chain IDs, or approved mainnet proving artifacts to code examples.
 - **One skill per surface.** Splitting by surface keeps prompt
   context tight: an agent doing DEX work does not need governance
   context bleeding in.
@@ -66,14 +69,14 @@ to.
 
 | Skill                                                       | Use it for                                                                                                                                  |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`xian-sdk-skill`](./xian-sdk-skill/)                       | Build applications on Xian with the current Python SDK (`xian-tech-py`): tx submission, chi estimation, simulation, deploy, indexed reads. |
-| [`xian-node-skill`](./xian-node-skill/)                     | Operate Xian nodes with the current CLI (`xian-tech-cli`) and stack model: join canonical networks, run validators / BDS nodes, attach optional layers. |
-| [`xian-dex-skill`](./xian-dex-skill/)                       | Work with the current Xian DEX: quote through `con_dex`, single-pair flows via `con_dex_helper`, multi-hop router calls, indexed event reads. |
-| [`xian-zk-skill`](./xian-zk-skill/)                         | Work with the current shielded-note privacy stack: deposit / transfer / withdraw, `xian-zk` wallet and proving APIs, relayer tradeoffs.    |
-| [`xian-bds-skill`](./xian-bds-skill/)                       | Use the indexed BDS read surface correctly: blocks, txs, events, state history, `shielded_wallet_history`, BDS snapshot recovery.          |
-| [`xian-wallet-skill`](./xian-wallet-skill/)                 | Work with current browser and mobile wallets: contract-call flows, asset decimals, network settings, shielded backup.                       |
-| [`xian-contract-skill`](./xian-contract-skill/)             | Author and validate current Xian smart contracts: `xian-contracting` rules, modern `LogEvent`, current XSC001 shape, lint and tests.        |
-| [`xian-governance-skill`](./xian-governance-skill/)         | Work with current validator governance and operator lifecycle: membership, delegation, state-patch, evidence and slashing.                  |
+| [`xian-sdk-skill`](./xian-sdk-skill/)                       | Build applications on Xian with the current Python SDK (`xian-tech-py`): helper clients, tx submission, chi estimation, source deploy, indexed reads. |
+| [`xian-node-skill`](./xian-node-skill/)                     | Operate Xian nodes with the current CLI (`xian-tech-cli`) and stack model: join canonical networks, run validators / BDS nodes, attach optional relayer, dashboard, monitoring, and automation layers. |
+| [`xian-dex-skill`](./xian-dex-skill/)                       | Work with the current Xian DEX: quote through `con_dex`, single-pair flows via `con_dex_helper`, LP-token-backed liquidity, indexed event reads. |
+| [`xian-zk-skill`](./xian-zk-skill/)                         | Work with the current shielded-note privacy stack: deposit / transfer / withdraw, `xian-zk` wallet and proving APIs, relayer and ceremony constraints. |
+| [`xian-bds-skill`](./xian-bds-skill/)                       | Use the indexed BDS read surface correctly: blocks, txs, events, token inventory, DEX candles, `shielded_wallet_history`, BDS snapshot recovery. |
+| [`xian-wallet-skill`](./xian-wallet-skill/)                 | Work with current browser and mobile wallets: provider approvals, wallet-owned swaps, activity, WalletConnect, network settings, shielded backup. |
+| [`xian-contract-skill`](./xian-contract-skill/)             | Write valid Xian smart contracts from a product spec: restricted contract source, storage/events/time/numeric patterns, local tests, and source deploy snippets. |
+| [`xian-governance-skill`](./xian-governance-skill/)         | Work with current validator governance and operator lifecycle: membership, delegation, state-patch, evidence, slashing, and protocol-safety validation. |
 
 ## Skill Layout
 

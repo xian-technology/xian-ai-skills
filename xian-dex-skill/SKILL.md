@@ -19,8 +19,13 @@ Current DEX surface:
 - `con_pairs`
   - pair registry
   - reserves
-  - LP balances and LP approvals
-  - DEX events such as `PairCreated`, `Mint`, `Burn`, `Swap`, `Sync`
+  - LP token registration and pair-to-LP-token binding
+  - DEX events such as `PairCreated`, `LpTokenRegistered`, `Mint`, `Burn`,
+    `Swap`, `Sync`
+
+- `con_lp_token`
+  - XSC001-compatible LP token template
+  - LP balances, transfers, and approvals for bound pair positions
 
 - `con_dex`
   - quote helpers
@@ -223,7 +228,10 @@ tx = xian.send_tx(
 
 ### Add Liquidity
 
-Approve both tokens to `con_dex` first, then:
+Approve both underlying tokens to `con_dex` first, then add liquidity. The pair
+must have a registered bound LP token; bootstrap/operator code usually calls
+`con_pairs.registerLpToken(...)` before pair creation. Only pass the optional
+`lpToken` argument to `addLiquidity(...)` when it matches the registered token.
 
 ```python
 tx = xian.send_tx(
@@ -245,9 +253,20 @@ tx = xian.send_tx(
 
 ### Remove Liquidity
 
-LP balances and LP allowances live in `con_pairs`.
+LP balances and LP allowances live in the bound LP token contract, not in
+`con_pairs`. Resolve the LP token, approve it to `con_dex`, then remove
+liquidity.
 
 ```python
+lp_token = xian.call("con_pairs", "lpTokenFor", {"pair": pair_id})
+
+xian.approve(
+    contract="con_dex",
+    token=lp_token,
+    amount=10,
+    mode="commit",
+)
+
 tx = xian.send_tx(
     contract="con_dex",
     function="removeLiquidity",
@@ -273,10 +292,11 @@ Key indexed DEX events are on `con_pairs`:
 - `Burn`
 - `Swap`
 - `Sync`
-- `TransferLiq`
-- `ApproveLiq`
+- `LpTokenRegistered`
 
-Router admin events such as `ZeroFeeTraderUpdated` are on `con_dex`.
+LP token `Transfer`, `Approve`, `Mint`, and `Burn` events are on the bound LP
+token contracts. Router admin events such as `ZeroFeeTraderUpdated` are on
+`con_dex`.
 
 ```python
 swaps = xian.list_events("con_pairs", "Swap", limit=50)
@@ -341,3 +361,4 @@ subscription. Design the strategy around periodic checks.
   - `src/con_dex.py`
   - `src/con_dex_helper.py`
   - `src/con_pairs.py`
+  - `src/con_lp_token.py`

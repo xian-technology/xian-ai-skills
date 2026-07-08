@@ -19,11 +19,17 @@ Inside a uv-managed Python project:
 ```bash
 uv add xian-tech-py
 
+# Optional app helper clients
+uv add "xian-tech-py[app]"
+
 # Optional HD wallet support
 uv add "xian-tech-py[hd]"
 
 # Optional Ethereum wallet compatibility helpers
 uv add "xian-tech-py[eth]"
+
+# Optional offline compiler/artifact inspection helpers
+uv add "xian-tech-py[compile]"
 ```
 
 ## Default Workflow
@@ -31,9 +37,11 @@ uv add "xian-tech-py[eth]"
 1. Create or load a wallet.
 2. Connect `Xian` or `XianAsync` to the node RPC.
 3. Use `estimate_chi(...)` or `simulate(...)` before expensive writes.
-4. Submit writes with `mode="commit"` or `wait_for_tx=True` when downstream
-   logic depends on confirmed chain state.
-5. Use indexed reads for blocks, txs, events, and state history when the node
+4. Prefer helper clients such as `xian.token()`, `xian.contract()`,
+   `xian.events(...)`, and `xian.state_key(...)` for app code when they fit.
+5. Submit writes with `mode="checktx", wait_for_tx=True` or `mode="commit"`
+   when downstream logic depends on confirmed chain state.
+6. Use indexed reads for blocks, txs, events, token inventory, and state history when the node
    exposes BDS-backed APIs.
 
 ## Quick Reference
@@ -44,22 +52,23 @@ from xian_py import Xian, XianAsync, Wallet
 wallet = Wallet()
 xian = Xian("http://127.0.0.1:26657", wallet=wallet)
 
-balance = xian.get_balance(wallet.public_key)
-state = xian.get_state("currency", "balances", wallet.public_key)
+balance = xian.token().balance_of(wallet.public_key)
+state = xian.state_key("currency", "balances", wallet.public_key).get()
 
 quote = xian.estimate_chi("currency", "transfer", {
     "to": "recipient",
     "amount": 10,
 })
 
-tx = xian.send(
-    amount=10,
-    to_address="recipient",
-    mode="commit",
+tx = xian.token().transfer(
+    "recipient",
+    10,
+    mode="checktx",
+    wait_for_tx=True,
 )
 
-receipt = xian.wait_for_tx(tx.tx_hash)
-events = xian.list_events("currency", "Transfer", limit=25)
+receipt = tx.receipt or xian.wait_for_tx(tx.tx_hash)
+events = xian.events("currency", "Transfer").list(limit=25)
 ```
 
 ## Wallets
@@ -71,6 +80,7 @@ from xian_py import Wallet
 
 wallet = Wallet()
 restored = Wallet("ed30796abc4ab47a97bfb37359f50a9c362c7b304a4b4ad1b3f5369ecb6f7fd8")
+from_seed = Wallet.from_mnemonic("word1 word2 ...")
 
 print(wallet.public_key)
 ```
@@ -83,8 +93,8 @@ from xian_py.wallet import HDWallet
 hd = HDWallet()
 print(hd.mnemonic_str)
 
-wallet0 = hd.get_wallet([44, 0, 0, 0, 0])
-wallet1 = hd.get_wallet([44, 0, 0, 0, 1])
+wallet0 = hd.get_wallet([44, 734, 0, 0, 0])
+wallet1 = hd.get_wallet([44, 734, 0, 0, 1])
 ```
 
 ## Reads
@@ -177,19 +187,26 @@ def transfer(to: str, amount: float):
     balances[to] += amount
 '''
 
-tx = xian.submit_contract(
+tx = xian.deploy_contract(
     name="con_my_token",
-    code=code,
+    source=code,
     mode="commit",
 )
 ```
 
-See `references/contract-patterns.md` for current contract snippets.
+`deploy_contract(...)` is the app-facing source deployment helper.
+`submit_contract(...)` remains the lower-level public submission call. Both
+submit source; the node derives Xian VM IR from that source.
+
+See `references/contract-patterns.md` for quick snippets. For writing a new
+contract from a product spec, use the `xian-contract` skill when available.
 
 ## Indexed Data
 
 These methods are the right choice when the node is running with BDS/indexed
 reads enabled.
+Use DEX candle `market_id` values reported by the indexer, often pair id values;
+do not invent token-pair strings.
 
 ```python
 blocks = xian.list_blocks(limit=20)
@@ -200,6 +217,10 @@ contract_txs = xian.list_txs_by_contract("con_dex", limit=50)
 events = xian.list_events("con_pairs", "Swap", limit=25)
 state_history = xian.get_state_history("currency.balances:some_address", limit=25)
 dev_rewards = xian.get_developer_rewards(wallet.public_key)
+token_contracts = xian.get_token_contracts(limit=20)
+token_balances = xian.get_token_balances(wallet.public_key, include_zero=False)
+shielded_tags = xian.list_shielded_output_tags("tag-value", limit=100)
+dex_candles = xian.list_dex_candles(market_id="7", interval="1m", limit=100)
 ```
 
 ## Async Pattern
@@ -241,9 +262,11 @@ For contract events, prefer indexed polling with `list_events(...)` and an
 
 ## SDK Guidance
 
-- Prefer `mode="commit"` for writes that feed a later step.
+- Prefer `mode="checktx", wait_for_tx=True` or `mode="commit"` for writes that
+  feed a later step.
 - Prefer `estimate_chi(...)` over hardcoding chi values.
-- Prefer `approve(...)` and other helper methods when they fit.
+- Prefer helper clients (`token()`, `contract()`, `events(...)`,
+  `state_key(...)`) and helpers such as `approve(...)` when they fit.
 - Prefer indexed APIs for analytics, explorers, and bots.
 - Treat `get_contract_source(...)` as original contract source and
   `get_contract_ir(...)` as Xian VM IR.

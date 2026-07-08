@@ -75,6 +75,18 @@ Tradeoff:
 Use the stack-managed shielded relayer when you want proof-bound submission
 without the wallet directly posting the transaction.
 
+For operator profiles, enable it through the node/runtime profile rather than a
+standalone ad hoc process:
+
+```bash
+xian network join shielded-node \
+  --network testnet \
+  --template single-node-indexed \
+  --enable-bds \
+  --enable-shielded-relayer \
+  --init-node
+```
+
 Tradeoff:
 
 - improves network-origin privacy posture
@@ -99,6 +111,9 @@ recovery, and keep BDS snapshot export/import operational at the network side.
 - `ShieldedNoteProver.build_insecure_dev_bundle()` is for local tests only.
 - `build_random_bundle(...)` is a single-party random setup, not an MPC
   ceremony.
+- mainnet privacy catalogs must stay empty until ceremony-derived proving
+  artifacts are imported, reviewed, and checksum-pinned; do not treat local dev
+  or single-party bundles as mainnet-approved material.
 - `xian-zk-prover-service` is a trusted local proving companion. It improves
   deployability but still sees witness material.
 - zk correctness does not depend on BDS, but wallet recovery and note
