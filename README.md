@@ -35,6 +35,7 @@ cp -r xian-bds-skill        /path/to/agent/skills/
 cp -r xian-wallet-skill     /path/to/agent/skills/
 cp -r xian-contract-skill   /path/to/agent/skills/
 cp -r xian-governance-skill /path/to/agent/skills/
+cp -r xian-release-skill    /path/to/agent/skills/
 ```
 
 Each skill's `SKILL.md` is the entrypoint the agent reads. The
@@ -77,6 +78,7 @@ to.
 | [`xian-wallet-skill`](./xian-wallet-skill/)                 | Work with current browser and mobile wallets: provider approvals, wallet-owned swaps, activity, WalletConnect, network settings, shielded backup. |
 | [`xian-contract-skill`](./xian-contract-skill/)             | Write valid Xian smart contracts from a product spec: restricted contract source, storage/events/time/numeric patterns, local tests, and source deploy snippets. |
 | [`xian-governance-skill`](./xian-governance-skill/)         | Work with current validator governance and operator lifecycle: membership, delegation, state-patch, evidence, slashing, and protocol-safety validation. |
+| [`xian-release-skill`](./xian-release-skill/)               | Plan and create Xian releases in dependency order only after GitHub validations are green, including package dependency updates after provider releases. |
 
 ## Skill Layout
 

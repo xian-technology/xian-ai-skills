@@ -1,0 +1,4 @@
+interface:
+  display_name: "Xian Release"
+  short_description: "Release Xian repos in the validated dependency order."
+  default_prompt: "Plan or create Xian releases only after GitHub validations are green."
