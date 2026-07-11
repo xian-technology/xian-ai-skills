@@ -47,10 +47,14 @@ Release dependency providers before consumers:
 6. `xian-linter`: `vX.Y.Z`
 7. `xian-js`: `vX.Y.Z`
 8. `xian-wallet-browser`: `vX.Y.Z`
-9. `xian-stack`: `vX.Y.Z`
+9. independent apps, when their own repo changed:
+   `xian-wallet-mobile`, `xian-contracting-hub-web`
+10. `xian-stack`: `vX.Y.Z`
 
 `xian-wallet-browser` rolls after `xian-js`. `xian-stack` rolls last because
-its release manifest pins component refs.
+its release manifest pins component refs. `xian-wallet-mobile` and
+`xian-contracting-hub-web` have independent tag-driven GitHub Release
+workflows and should still wait for their own `main` validations before tags.
 
 ## Validation Gate
 
@@ -103,7 +107,7 @@ Common dependencies:
 
 ## Repos Without Release Flow
 
-If a repo has GitHub releases but no tag-driven release workflow, prefer adding
-or fixing the release flow before creating new tags. If the user explicitly
-accepts a manual release, still require green GitHub checks, stable semver, and
-a clear GitHub Release tied to an immutable tag.
+If a repo has GitHub releases but no tag-driven release workflow, add or fix
+the release flow before creating new tags. If the user explicitly accepts a
+manual release as a temporary exception, still require green GitHub checks,
+stable semver, and a clear GitHub Release tied to an immutable tag.
