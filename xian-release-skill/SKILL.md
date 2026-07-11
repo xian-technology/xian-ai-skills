@@ -56,6 +56,12 @@ its release manifest pins component refs. `xian-wallet-mobile` and
 `xian-contracting-hub-web` have independent tag-driven GitHub Release
 workflows and should still wait for their own `main` validations before tags.
 
+`xian-intentkit` is deliberately fork-managed and outside the coordinated
+orchestrator. Upstream IntentKit keeps `pyproject.toml` at `0.0.0` and injects
+the release version during GitHub Release CI. Do not normalize that metadata in
+the fork just to satisfy Xian release tooling; release the fork through its
+repo-local GitHub Release flow when it has fork-specific changes.
+
 ## Validation Gate
 
 Never create or push a release tag for a failed ref. Before tagging:
@@ -101,6 +107,9 @@ Common dependencies:
 - `xian-wallet-browser` consumes `xian-js`
 - `xian-stack` pins `xian-abci`, `xian-configs`, `xian-contracting`, and
   `xian-py` refs in `release-manifest.json`
+- `xian-intentkit` is an optional sidecar attached by stack/CLI integration,
+  but its upstream fork release flow remains separate from the coordinated
+  stack/package release path
 - Python packages using `xian-tech-contracting`, `xian-tech-py`, or related
   workspace packages may need `pyproject.toml`, lockfile, and test updates
 - npm consumers may need `package.json` and lockfile updates
