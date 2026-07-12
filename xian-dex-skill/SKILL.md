@@ -42,10 +42,54 @@ Current DEX surface:
 
 Prefer:
 
+- the first-class `dex_*` MCP/HTTP tools when `xian-mcp-server` is available
 - `con_dex_helper.buy(...)` / `sell(...)` for simple single-pair trades
 - direct `con_dex` calls for multi-hop routes and liquidity operations
 
 That matches the current contract split.
+
+The canonical generated-client input is `xian-dex/dex-interface.json`. Do not
+infer exported signatures or safety policies from old examples when that
+manifest is available.
+
+## Agent Tool Workflow
+
+`xian-mcp-server` exposes a safe plan-first workflow over both MCP stdio and its
+shared HTTP catalog:
+
+This tool contract requires `xian-mcp-server` version `0.1.0` or newer and is
+aligned with the `xian-dex` `v0.1.0` bundle/interface release.
+
+- discovery: `dex_list_pairs`, `dex_get_pair`
+- quotes: `dex_quote_exact_in`, `dex_quote_exact_out`
+- server-issued plans: `dex_plan_swap`, `dex_plan_add_liquidity`,
+  `dex_plan_remove_liquidity`
+- gated submission: `dex_submit_swap`, `dex_submit_add_liquidity`,
+  `dex_submit_remove_liquidity`
+- low-latency live wait without BDS: `dex_wait_live_event`
+- indexed verification/recovery: `dex_list_events`
+
+Plans are structured audit JSON with the route and hop amounts, exact approval
+and router calls, signer fee tier, slippage minimums, an absolute deadline,
+fee-on-transfer selection, price impact, warnings, an opaque `plan_id`, a
+canonical SHA-256 digest, and issue/expiry timestamps. Show the full plan to the
+user before submission. After authorization, pass only `plan_id` and the private
+key to the matching submit tool; never reconstruct or send calls to a submitter.
+
+The server stores the canonical plan in a bounded process-local registry.
+Submission atomically consumes it before wallet validation, simulation, or any
+transaction, which prevents concurrent execution and replay after partial
+multi-call failures. Plans expire quickly and do not survive a server restart;
+if submission reports an unknown, expired, consumed, invalidated, or evicted
+`plan_id`, create and confirm a fresh plan. Submission tools use the unsafe-wallet
+gate and simulate by default.
+
+The router has no exact-output transaction function. Exact-output quoting is
+supported, while an exact-output swap plan becomes an exact-input call whose
+input is capped by slippage and whose `amountOutMin` is the requested output.
+Fee-on-transfer exact-output plans are rejected because they cannot guarantee
+the received amount. The exact-input router spends that full input cap; unused
+slippage headroom becomes additional output rather than a refund.
 
 ## Setup
 
@@ -307,6 +351,13 @@ router_events = xian.list_events("con_dex", "ZeroFeeTraderUpdated", limit=25)
 For restart-safe consumers, store the last processed `event_id` and use
 `after_id=...` on the next poll.
 
+For a bounded low-latency wait, `dex_wait_live_event(contract, event, ...)`
+subscribes directly to finalized CometBFT transaction events and does not need
+BDS. Start the wait before the transaction or external activity you expect to
+observe. It is intentionally non-durable: disconnects, process restarts, and
+events finalized before subscription can be missed, and it returns no replay
+cursor. Recover with `dex_list_events(after_id=...)` when BDS is available.
+
 ## Common Failure Cases
 
 Current DEX assertions use `SNAKX:*` messages. Expect errors such as:
@@ -321,25 +372,28 @@ Treat them as normal routing/market validation failures, not transport errors.
 
 ## Autonomous Agent Pattern
 
-Today, the clean autonomous posture is polling-based:
+The clean autonomous posture is a hybrid live-plus-recovery loop:
 
-1. run against a node with BDS enabled for indexed reads
-2. poll `Swap` / `Sync` / token events with an `after_id` cursor
+1. persist the last processed BDS `event_id` when durable recovery is required
+2. use `dex_wait_live_event` for immediate finalized notifications
 3. calculate the trade off-chain
 4. approve and execute the trade
 5. verify the confirmed tx receipt
-6. only then trigger side effects such as notifications or social posts
+6. reconcile with `dex_list_events(after_id=...)` after reconnect/startup
+7. only then trigger side effects such as notifications or social posts
 
-If you are implementing this inside `xian-intentkit`, the current building
-blocks are:
+With `xian-mcp-server`, use these building blocks:
 
-- `xian_list_events`
-- `xian_call_contract`
-- `xian_send_contract_transaction`
-- `twitter_post_tweet`
+- `dex_list_events`
+- `dex_wait_live_event`
+- `dex_quote_exact_in` / `dex_quote_exact_out`
+- `dex_plan_swap`
+- `dex_submit_swap(private_key, plan_id)` after explicit authorization
 
-The current `xian-intentkit` trigger model is scheduled polling, not true push
-subscription. Design the strategy around periodic checks.
+The live event surface is a bounded WebSocket wait, not a durable queue. The
+indexed event surface remains cursor-based polling. Persist `next_after_id` for
+recovery and never assume a live timeout proves that no matching event was
+finalized.
 
 ## Safety Rules
 
@@ -349,7 +403,8 @@ subscription. Design the strategy around periodic checks.
 - Prefer a dedicated trading wallet with capped approvals.
 - Prefer helper flows for simple single-pair trades.
 - Re-check the confirmed receipt before treating a trade as successful.
-- Use BDS/indexed reads for bots; do not scrape the dashboard.
+- Use direct CometBFT live events for speed and BDS/indexed reads for recovery;
+  do not scrape the dashboard.
 - Use uv-managed Python commands for SDK-based bots and deployment scripts.
 
 ## Resources
