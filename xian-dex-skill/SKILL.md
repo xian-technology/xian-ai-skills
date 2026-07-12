@@ -57,6 +57,9 @@ manifest is available.
 `xian-mcp-server` exposes a safe plan-first workflow over both MCP stdio and its
 shared HTTP catalog:
 
+This tool contract requires `xian-mcp-server` version `0.1.0` or newer and is
+aligned with the `xian-dex` `v0.1.0` bundle/interface release.
+
 - discovery: `dex_list_pairs`, `dex_get_pair`
 - quotes: `dex_quote_exact_in`, `dex_quote_exact_out`
 - server-issued plans: `dex_plan_swap`, `dex_plan_add_liquidity`,
