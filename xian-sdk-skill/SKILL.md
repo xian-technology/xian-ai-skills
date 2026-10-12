@@ -279,3 +279,28 @@ For contract events, prefer indexed polling with `list_events(...)` and an
 - [xian-technology/xian-py](https://github.com/xian-technology/xian-py)
 - [xian-technology/xian-contracting](https://github.com/xian-technology/xian-contracting)
 - [xian docs](https://docs.xian.org)
+
+## Hybrid account custody
+
+Current coordinated sources support Ed25519 + ML-DSA-65 account transactions.
+Enrollment is disabled by default; do not enable it as an incidental integration
+step. Keep the exact original address. After enrollment an old seed alone cannot
+spend or recover. Wallet enrollment/rotation requires exporting, reopening and
+validating both encrypted active and separate cold recovery files before any
+submission. Persist pending keys and exact transaction bytes before broadcast;
+reconcile committed registry state after failure or restart. Cold recovery
+replaces both pairs without changing balances or permissions.
+
+Python services can load an existing active backup with
+`xian_py.signers.load_signing_wallet(active_backup_file=path,
+backup_password=password, expected_address=address, chain_id=chain_id)` from the
+SDK's `hybrid` extra. Never fall back to an old key after an invalid backup or
+registry read. Keep offline recovery secrets outside application/tool inputs.
+An active-file loader does not itself implement an enrollment/recovery workflow.
+Use current repo/public recovery docs and require the coordinated release.
+
+Generic legacy message signatures, x402 permits, validator consensus and shielded
+proof systems are separate protocols. Canonical legacy permits reject enrolled
+owners; use direct hybrid-signed contract calls. Source fixes do not upgrade
+already deployed authorization contracts. Independent review, device recovery
+checks, deployed-contract readiness and release validation still gate enrollment.

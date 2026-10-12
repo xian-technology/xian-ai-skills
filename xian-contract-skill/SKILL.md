@@ -213,3 +213,22 @@ Before handing back contract code:
 - [xian-technology/xian-contracting](https://github.com/xian-technology/xian-contracting)
 - [xian-technology/xian-contracts](https://github.com/xian-technology/xian-contracts)
 - [xian-technology/xian-py](https://github.com/xian-technology/xian-py)
+
+## Account identity and signature-based permissions
+
+Hybrid account enrollment keeps the original address, balances, allowances and
+`ctx.signer`/`ctx.caller` identity. Prefer direct authenticated contract calls.
+`crypto.verify` remains plain Ed25519 verification; it does not consult the
+account registry or prove current account authority after enrollment/recovery.
+A legacy permit relay must reject enrolled signers using a read-only registry
+lookup (as in the canonical permit authorizer):
+
+```python
+account_records = ForeignHash(foreign_contract="_accounts", foreign_name="records")
+# Before accepting a legacy owner signature:
+# assert account_records[owner] is None, "Use a direct hybrid-signed call."
+```
+
+Existing deployed copies require explicit upgrades and testing before enrollment
+activation. Existing allowances remain valid; recovery does not revoke them.
+Do not infer whole-chain quantum security from hybrid account transactions.
