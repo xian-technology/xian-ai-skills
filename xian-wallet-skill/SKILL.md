@@ -23,6 +23,13 @@ There are two active wallet surfaces:
 Treat them as sibling products with aligned wallet semantics, not as unrelated
 implementations.
 
+Mnemonic accounts share the same indexed derivation with Python's
+`Wallet.from_mnemonic(phrase, account_index=n)` and
+`HDWallet(phrase).get_wallet(account_index=n)`. Matching phrase and index must
+produce the same Xian address across all surfaces; preserve this parity when
+changing import or recovery flows. MCP HD-wallet tools accept `account_index`
+and default to `0`.
+
 ## What They Already Do
 
 Current wallet capabilities include:

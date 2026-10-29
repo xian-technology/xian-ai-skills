@@ -93,9 +93,16 @@ from xian_py.wallet import HDWallet
 hd = HDWallet()
 print(hd.mnemonic_str)
 
-wallet0 = hd.get_wallet([44, 734, 0, 0, 0])
-wallet1 = hd.get_wallet([44, 734, 0, 0, 1])
+wallet0 = hd.get_wallet(account_index=0)
+wallet1 = hd.get_wallet(account_index=1)
 ```
+
+`HDWallet.get_wallet` and `Wallet.from_mnemonic` share the browser/mobile indexed
+derivation. The same phrase and account index produce the same Xian account;
+both Python methods default to index `0`. Use an integer index from `0` through
+`4294967295`, not a derivation-path list. Retain the account index with recovery
+material. MCP HD-wallet tools use this same scheme and default to account `0`;
+pass `account_index` to select another account.
 
 ## Reads
 
