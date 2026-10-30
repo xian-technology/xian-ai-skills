@@ -7,8 +7,9 @@ dropped into coding agents (Codex, Claude Code, and similar tools) so
 the agent works from current Xian workflows instead of stale
 repo-era guidance.
 
-The repo is content, not runtime code. It contains no application
-logic — just the skills agents read at prompt time.
+The repo contains skill documentation and small operator helper scripts.
+The validator-key helper creates private output files with mode `0600` on
+POSIX systems and refuses symlink destinations, including with `--force`.
 
 ## Skill Consumption Flow
 
@@ -94,6 +95,8 @@ Skills are content. The validation gate is a careful re-read against
 current behavior in the upstream repos when something changes there.
 When a skill diverges from the current Xian stack, update it in the
 same change set.
+
+Validate the operator helper scripts with `python3 -m unittest discover -s tests`.
 
 ## Resources
 

@@ -17,6 +17,7 @@ import argparse
 import base64
 import hashlib
 import json
+import os
 from pathlib import Path
 import secrets
 
@@ -68,16 +69,26 @@ def build_validator_material(private_key_hex: str | None = None) -> dict:
 
 
 def write_validator_files(out_dir: Path, payload: dict, *, force: bool) -> None:
-    out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     files = {
         "priv_validator_key.json": payload["priv_validator_key"],
         "validator_key_info.json": payload,
     }
-    for name, content in files.items():
+    for name in files:
         path = out_dir / name
+        if path.is_symlink():
+            raise SystemExit(f"{path} must not be a symlink")
         if path.exists() and not force:
             raise SystemExit(f"{path} already exists; pass --force to overwrite")
-        path.write_text(json.dumps(content, indent=2) + "\n", encoding="utf-8")
+    for name, content in files.items():
+        path = out_dir / name
+        flags = os.O_WRONLY | os.O_CREAT | (os.O_TRUNC if force else os.O_EXCL)
+        flags |= getattr(os, "O_NOFOLLOW", 0)
+        fd = os.open(path, flags, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            if os.name != "nt":
+                os.fchmod(handle.fileno(), 0o600)
+            handle.write(json.dumps(content, indent=2) + "\n")
 
 
 def main():
