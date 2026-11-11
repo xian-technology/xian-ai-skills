@@ -104,8 +104,9 @@ from xian_py import Xian, Wallet, XianClientConfig
 wallet = Wallet("your_private_key")
 xian = Xian("http://127.0.0.1:26657", wallet=wallet, config=XianClientConfig(vm_profile="xian_vm_v2"))
 
-def deadline(minutes: int = 5) -> datetime:
-    return datetime.now(timezone.utc) + timedelta(minutes=minutes)
+def deadline(minutes: int = 5) -> dict:
+    timestamp = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+    return {"__time__": [*timestamp.timetuple()[:6], timestamp.microsecond]}
 ```
 
 The current helper and router contracts require an absolute future
