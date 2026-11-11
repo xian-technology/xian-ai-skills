@@ -33,8 +33,8 @@ new Python features unless the Xian linter/runtime explicitly allows them.
 
 Allowed in normal contract code:
 
-- assignments and augmented assignments, except augmented `*`, `**`, `<<`, and
-  `>>`
+- assignments and augmented assignments, except augmented multiplication
+  (`x *= y`; write `x = x * y`)
 - arithmetic: `+`, `-`, `*`, `/`, `//`, `%`, `**`
 - comparisons: `==`, `!=`, `<`, `<=`, `>`, `>=`, `in`, `not in`, `is`,
   `is not`
@@ -60,7 +60,6 @@ Forbidden or unsafe:
 - imports inside functions
 - stdlib/builtin imports such as `os`, `sys`, `json`, `datetime`, `decimal`
 - names that start or end with `_`
-- semicolons
 - one-line compound statements such as `if ok: return value`
 - set literals and set comprehensions. The `set` and `frozenset` names are
   allowed, but `{1, 2}` and `{x for x in xs}` are rejected.

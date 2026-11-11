@@ -83,7 +83,7 @@ guards. Prefer clear failure messages because users and bots will see them.
 - Keep helper functions top-level. Do not write classes, async functions,
   lambdas, nested functions, `try`, `with`, generators, or `from ... import`.
 - Do not use names that start or end with `_`.
-- Do not use semicolons or one-line compound statements.
+- Do not use one-line compound statements (`if ok: return value`) or `x *= y`.
 - Do not use `in` with `Hash`; read the key and compare with `None` or the
   configured default value.
 - Do not pass `contract=` or `name=` to `Variable`, `Hash`, or `LogEvent`.
