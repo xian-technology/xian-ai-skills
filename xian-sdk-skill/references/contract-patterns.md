@@ -20,7 +20,7 @@ Transfer = LogEvent(
     {
         "from": {"type": str, "idx": True},
         "to": {"type": str, "idx": True},
-        "amount": {"type": float},
+        "amount": {"type": decimal},
     },
 )
 Approve = LogEvent(
@@ -28,7 +28,7 @@ Approve = LogEvent(
     {
         "from": {"type": str, "idx": True},
         "to": {"type": str, "idx": True},
-        "amount": {"type": float},
+        "amount": {"type": decimal},
     },
 )
 
@@ -55,7 +55,7 @@ def change_metadata(key: str, value: Any):
     metadata[key] = value
 
 @export
-def transfer(amount: float, to: str):
+def transfer(amount: decimal, to: str):
     assert amount > 0, "Amount must be positive"
     assert balances[ctx.caller] >= amount, "Insufficient balance"
     balances[ctx.caller] -= amount
@@ -63,13 +63,13 @@ def transfer(amount: float, to: str):
     Transfer({"from": ctx.caller, "to": to, "amount": amount})
 
 @export
-def approve(amount: float, to: str):
+def approve(amount: decimal, to: str):
     assert amount >= 0, "Cannot approve negative balances"
     approvals[ctx.caller, to] = amount
     Approve({"from": ctx.caller, "to": to, "amount": amount})
 
 @export
-def transfer_from(amount: float, to: str, main_account: str):
+def transfer_from(amount: decimal, to: str, main_account: str):
     assert amount > 0, "Amount must be positive"
     assert approvals[main_account, ctx.caller] >= amount, "Not approved"
     assert balances[main_account] >= amount, "Insufficient balance"
@@ -79,11 +79,11 @@ def transfer_from(amount: float, to: str, main_account: str):
     Transfer({"from": main_account, "to": to, "amount": amount})
 
 @export
-def balance_of(address: str) -> float:
+def balance_of(address: str) -> decimal:
     return balances[address]
 
 @export
-def allowance(owner: str, spender: str) -> float:
+def allowance(owner: str, spender: str) -> decimal:
     return approvals[owner, spender]
 ```
 

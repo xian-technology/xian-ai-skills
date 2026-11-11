@@ -43,9 +43,9 @@ Use DEX candle `market_id` values reported by the indexer, often pair id values;
 do not invent token-pair strings.
 
 ```python
-from xian_py import Xian
+from xian_py import Xian, XianClientConfig
 
-xian = Xian("http://127.0.0.1:26657")
+xian = Xian("http://127.0.0.1:26657", config=XianClientConfig(vm_profile="xian_vm_v2"))
 
 status = xian.get_bds_status()
 blocks = xian.list_blocks(limit=20)

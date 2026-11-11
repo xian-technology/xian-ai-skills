@@ -111,7 +111,7 @@ Transfer = LogEvent(
     {
         "from": {"type": str, "idx": True},
         "to": {"type": str, "idx": True},
-        "amount": {"type": float},
+        "amount": {"type": decimal},
     },
 )
 ```
@@ -124,7 +124,7 @@ Transfer({"from": ctx.caller, "to": to, "amount": amount})
 
 ## Numbers, Time, And Randomness
 
-- Use `float` for user-facing decimal amounts. Xian executes those values as
+- Use `decimal` for user-facing decimal amounts. Xian executes those values as
   deterministic decimal-backed values, not binary floating point.
 - Use `now` for chain time. Do not call wall-clock APIs.
 - On on-demand networks, time advances only when blocks are produced.
@@ -148,7 +148,7 @@ CONTRACT = Path("contracts/con_example.s.py").read_text()
 
 @pytest.fixture
 def client():
-    c = ContractingClient(signer="alice")
+    c = ContractingClient(signer="alice", vm_profile="xian_vm_v2")
     c.submit(CONTRACT, name="con_example")
     return c
 
@@ -174,10 +174,10 @@ deployment:
 ```python
 from pathlib import Path
 
-from xian_py import Wallet, Xian
+from xian_py import Wallet, Xian, XianClientConfig
 
 wallet = Wallet("your_private_key")
-xian = Xian("http://127.0.0.1:26657", wallet=wallet)
+xian = Xian("http://127.0.0.1:26657", wallet=wallet, config=XianClientConfig(vm_profile="xian_vm_v2"))
 source = Path("contracts/con_example.s.py").read_text()
 
 tx = xian.deploy_contract(

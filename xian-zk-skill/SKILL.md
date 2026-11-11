@@ -141,4 +141,4 @@ make -C /path/to/xian-stack localnet-parallel-e2e
 
 The regular harness covers the shielded-note-token flow and relayer-facing
 integration. The VM-focused harness proves the same product path under the
-fixed `xian_vm_v1` runtime and enforces the runtime report.
+fixed `xian_vm_v2` runtime and enforces the runtime report.

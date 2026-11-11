@@ -47,10 +47,10 @@ uv add "xian-tech-py[compile]"
 ## Quick Reference
 
 ```python
-from xian_py import Xian, XianAsync, Wallet
+from xian_py import Xian, XianAsync, Wallet, XianClientConfig
 
 wallet = Wallet()
-xian = Xian("http://127.0.0.1:26657", wallet=wallet)
+xian = Xian("http://127.0.0.1:26657", wallet=wallet, config=XianClientConfig(vm_profile="xian_vm_v2"))
 
 balance = xian.token().balance_of(wallet.public_key)
 state = xian.state_key("currency", "balances", wallet.public_key).get()
@@ -109,9 +109,9 @@ pass `account_index` to select another account.
 ### Contract State
 
 ```python
-from xian_py import Xian
+from xian_py import Xian, XianClientConfig
 
-xian = Xian("http://127.0.0.1:26657")
+xian = Xian("http://127.0.0.1:26657", config=XianClientConfig(vm_profile="xian_vm_v2"))
 
 balance = xian.get_state("currency", "balances", "some_address")
 allowance = xian.get_state("currency", "approvals", "owner", "spender")
@@ -187,7 +187,7 @@ def seed():
     balances[ctx.caller] = 1000
 
 @export
-def transfer(to: str, amount: float):
+def transfer(to: str, amount: decimal):
     assert amount > 0, "Amount must be positive"
     assert balances[ctx.caller] >= amount, "Insufficient balance"
     balances[ctx.caller] -= amount
@@ -234,11 +234,11 @@ dex_candles = xian.list_dex_candles(market_id="7", interval="1m", limit=100)
 
 ```python
 import asyncio
-from xian_py import XianAsync, Wallet
+from xian_py import XianAsync, Wallet, XianClientConfig
 
 async def main():
     wallet = Wallet()
-    async with XianAsync("http://127.0.0.1:26657", wallet=wallet) as xian:
+    async with XianAsync("http://127.0.0.1:26657", wallet=wallet, config=XianClientConfig(vm_profile="xian_vm_v2")) as xian:
         balance, status = await asyncio.gather(
             xian.get_balance(wallet.public_key),
             xian.get_node_status(),

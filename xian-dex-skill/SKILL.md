@@ -57,8 +57,8 @@ manifest is available.
 `xian-mcp-server` exposes a safe plan-first workflow over both MCP stdio and its
 shared HTTP catalog:
 
-This tool contract requires `xian-mcp-server` version `0.1.0` or newer and is
-aligned with the `xian-dex` `v0.1.0` bundle/interface release.
+This tool contract requires `xian-mcp-server` version `0.1.1` or newer for V2 numbers.
+Use the `xian-dex` `0.2.0` bundle and interface for a fresh V2 chain.
 
 - discovery: `dex_list_pairs`, `dex_get_pair`
 - quotes: `dex_quote_exact_in`, `dex_quote_exact_out`
@@ -99,10 +99,10 @@ uv add xian-tech-py
 
 ```python
 from datetime import datetime, timedelta, timezone
-from xian_py import Xian, Wallet
+from xian_py import Xian, Wallet, XianClientConfig
 
 wallet = Wallet("your_private_key")
-xian = Xian("http://127.0.0.1:26657", wallet=wallet)
+xian = Xian("http://127.0.0.1:26657", wallet=wallet, config=XianClientConfig(vm_profile="xian_vm_v2"))
 
 def deadline(minutes: int = 5) -> datetime:
     return datetime.now(timezone.utc) + timedelta(minutes=minutes)
@@ -251,7 +251,9 @@ quoted = xian.call("con_dex", "getAmountsOut", {
     "path": path,
 })
 
-min_out = quoted[-1] * 0.99
+from xian_runtime_types.decimal import ContractingDecimal
+
+min_out = ContractingDecimal(quoted[-1]) * ContractingDecimal("0.99")
 
 tx = xian.send_tx(
     contract="con_dex",

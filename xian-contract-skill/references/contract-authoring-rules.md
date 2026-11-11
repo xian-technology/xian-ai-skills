@@ -69,8 +69,8 @@ Allowed builtins include:
 
 ```text
 Exception False None True abs all any ascii bin bool bytearray bytes chr dict
-divmod filter float format frozenset hex int isinstance issubclass len list map
-max min oct ord pow range reversed round set sorted str sum tuple zip
+divmod filter format frozenset hex int isinstance issubclass len list map
+max min oct ord pow range reversed set sorted str sum tuple zip
 ```
 
 Treat everything outside that list as unavailable.
@@ -125,7 +125,7 @@ Allowed annotation bases:
 - `datetime.datetime`
 - `datetime.timedelta`
 - `dict`
-- `float`
+- `decimal`
 - `frozenset`
 - `int`
 - `list`
@@ -135,7 +135,7 @@ Allowed annotation bases:
 Subscripted annotations are accepted when the base is allowed, such as
 `list[int]` or `dict[str, int]`.
 
-Use `float` for user-facing decimal quantities. Runtime values can encode more
+Use `decimal` for user-facing decimal quantities. Runtime values can encode more
 types than the annotation surface; leave return annotations off when returning a
 valid but awkward nested value.
 
@@ -188,7 +188,7 @@ Transfer = LogEvent(
     {
         "from": {"type": str, "idx": True},
         "to": {"type": str, "idx": True},
-        "amount": {"type": float},
+        "amount": {"type": decimal},
     },
 )
 ```
@@ -204,7 +204,7 @@ Rules:
 - emitted values must match declared types
 - each emitted value must be at most 1024 bytes once string-encoded
 
-Allowed event value types are `str`, `int`, `float`, `bool`, and
+Allowed event value types are `str`, `int`, `decimal`, `bool`, and
 decimal-backed values.
 
 Emit events after state changes that consumers care about:
@@ -219,7 +219,7 @@ For dynamic calls, use injected `importlib`:
 
 ```python
 @export
-def pay(token_name: str, to: str, amount: float):
+def pay(token_name: str, to: str, amount: decimal):
     token = importlib.import_module(token_name)
     token.transfer(amount=amount, to=to)
 ```
@@ -252,8 +252,14 @@ assert importlib.enforce_interface(token, required)
 
 ## Numbers
 
-Contract authors use `float` syntax for user-facing decimal values, but Xian
-executes those as deterministic decimal-backed values.
+Use `int` for integer counts and `decimal` for amounts with fractional units.
+Integers have magnitude below 2^512. Decimals have magnitude below 10^61
+and at most 30 fractional places. Decimal multiplication and numeric `/`
+truncate toward zero at 30 places. Integer `//` rounds down. Use `quantize(value,
+places, mode)` with a scale of 0–30 and `floor`, `ceil`, `toward_zero`, or
+`half_even`. The `sqrt` helper floors a square root to the decimal grid.
+`mul_div_floor` and `mul_div_ceil` divide an exact integer product by a
+positive integer and apply the named rounding rule.
 
 ```python
 price = 10.5
@@ -381,14 +387,14 @@ Transfer = LogEvent(
     {
         "from": {"type": str, "idx": True},
         "to": {"type": str, "idx": True},
-        "amount": {"type": float},
+        "amount": {"type": decimal},
     },
 )
 
 balances = Hash(default_value=0)
 
 @export
-def transfer(amount: float, to: str):
+def transfer(amount: decimal, to: str):
     assert amount > 0, "Amount must be positive"
     sender = ctx.caller
     sender_balance = balances[sender]
@@ -409,7 +415,7 @@ Before returning generated contract source:
 5. Keep helper functions top-level.
 6. Annotate every `@export` argument.
 7. Keep return annotations within the allowed annotation bases or omit them.
-8. Use `float` for user-facing decimal amounts.
+8. Use `decimal` for user-facing decimal amounts.
 9. Never rely on wall-clock time; use `now`.
 10. Never use `in` on `Hash`.
 11. Keep hash keys free of `:` and `.`.
