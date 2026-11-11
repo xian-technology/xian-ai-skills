@@ -82,7 +82,9 @@ guards. Prefer clear failure messages because users and bots will see them.
 - Annotate every exported argument.
 - Keep helper functions top-level. Do not write classes, async functions,
   lambdas, nested functions, `try`, `with`, generators, or `from ... import`.
-- Do not use names that start or end with `_`.
+- Do not use names that start or end with `_`, or non-ASCII identifiers.
+- Declare `Variable`, `Hash`, and `LogEvent` only as `name = X(...)` at module
+  level, with keyword arguments (`LogEvent` name/params are positional).
 - Do not use one-line compound statements (`if ok: return value`) or `x *= y`.
 - Do not use `in` with `Hash`; read the key and compare with `None` or the
   configured default value.

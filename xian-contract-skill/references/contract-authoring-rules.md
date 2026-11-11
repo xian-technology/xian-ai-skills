@@ -60,6 +60,7 @@ Forbidden or unsafe:
 - imports inside functions
 - stdlib/builtin imports such as `os`, `sys`, `json`, `datetime`, `decimal`
 - names that start or end with `_`
+- non-ASCII identifiers (string contents may contain any text)
 - one-line compound statements such as `if ok: return value`
 - set literals and set comprehensions. The `set` and `frozenset` names are
   allowed, but `{1, 2}` and `{x for x in xs}` are rejected.
@@ -151,10 +152,16 @@ settings = Hash()
 Rules:
 
 - `Variable`, `Hash`, `ForeignVariable`, `ForeignHash`, and `LogEvent` must be
-  explicit module-level declarations.
+  explicit module-level declarations. `Variable`, `Hash`, and `LogEvent` calls
+  are only accepted as the whole value of `name = X(...)` at module level
+  (`E022`).
 - Tuple unpacking for ORM declarations is rejected.
 - Do not pass `contract=` or `name=` to `Variable`, `Hash`, or `LogEvent`; the
   compiler/runtime injects them.
+- Use keyword arguments only; positional, `*args`, and `**kwargs` arguments are
+  rejected (`E023`), except `LogEvent`'s positional event name and params.
+- `ForeignVariable`/`ForeignHash` need `foreign_contract=` and `foreign_name=`
+  and reject `contract=`/`name=` (`E023`).
 - `ForeignVariable` and `ForeignHash` are read-only.
 - `Hash` supports at most 16 key dimensions.
 - Hash key components must not contain `:` or `.`.
