@@ -317,18 +317,21 @@ security, lotteries with value, validator selection, or secret generation.
 
 Important current limits:
 
-- recursion depth: 1024
+- execution depth (recursion plus cross-contract reentry): 128 frames
 - max hash dimensions: 16
 - max hash key size: 1024 bytes
 - max contract source submission size: 128 KiB
-- max return value size: 128 KiB
-- max sequence / binary allocation size: 128 KiB
+- max `range(...)` / sequence repetition length: 131,072 entries
+- max binary allocation / string repetition size: 128 KiB
+- no general return-value size cap; return bytes are metered
 
-Current byte costs:
+Current byte costs, in raw meter units (1,000 raw units = 1 chi;
+`chi_used = raw // 1000 + 5`):
 
-- reads: 1 chi / byte
-- writes: 25 chi / byte
-- return values: 1 chi / byte
+- reads: 2 units / byte
+- writes: 25 units / byte
+- transaction bytes: 1 unit / byte
+- return values: 1 unit / byte
 
 Practical guidance:
 

@@ -84,7 +84,7 @@ The backend command surface also exposes the same flow through
 - `--port-offset`
 - `--topology`
 - `--genesis-network`
-- `--tracer-mode`
+- `--log-level`
 - `--rpc-timeout-seconds`
 - `--bootstrap`
 - `--build`
@@ -92,7 +92,8 @@ The backend command surface also exposes the same flow through
 Prefer the Make target unless you specifically need backend-level overrides.
 The Make target already invokes the required uv-backed Python projects for the
 sibling workspace. `localnet-validator-governance` is retained only as a
-compatibility alias for older callers.
+`scripts/backend.py` subcommand alias for older callers; there is no Make target
+with that name.
 
 ## What The Harness Covers
 

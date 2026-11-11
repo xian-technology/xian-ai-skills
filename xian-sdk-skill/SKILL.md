@@ -285,7 +285,7 @@ asyncio.run(main())
 
 ```python
 for block in xian.watch_blocks():
-    print(block.height, block.hash)
+    print(block.height, block.block_hash)
 ```
 
 For contract events, prefer indexed polling with `list_events(...)` and an
