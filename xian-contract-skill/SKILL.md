@@ -124,8 +124,10 @@ Transfer({"from": ctx.caller, "to": to, "amount": amount})
 
 ## Numbers, Time, And Randomness
 
-- Use `decimal` for user-facing decimal amounts. Xian executes those values as
-  deterministic decimal-backed values, not binary floating point.
+- Use `int` for counts and `decimal` for fractional amounts. V2 source
+  literals such as `1.005` retain their digits. Numeric `/` and decimal
+  multiplication truncate toward zero at scale 30. Use
+  `quantize(value, places, "half_even")` when settlement calls for ties to even.
 - Use `now` for chain time. Do not call wall-clock APIs.
 - On on-demand networks, time advances only when blocks are produced.
 - Use `datetime.timedelta(...)` directly when needed; do not import
@@ -135,8 +137,9 @@ Transfer({"from": ctx.caller, "to": to, "amount": amount})
 
 ## Local Tests
 
-For a standalone contract, generate a focused test around the public exports and
-important invariants:
+Install `xian-tech-contracting[v2]` for native tests and pass
+`vm_profile="xian_vm_v2"` to the local client. The bare local client defaults
+to V1. Test the public exports in isolated storage.
 
 ```python
 from pathlib import Path
@@ -147,10 +150,10 @@ from contracting.local import ContractingClient
 CONTRACT = Path("contracts/con_example.s.py").read_text()
 
 @pytest.fixture
-def client():
-    c = ContractingClient(signer="alice", vm_profile="xian_vm_v2")
-    c.submit(CONTRACT, name="con_example")
-    return c
+def client(tmp_path):
+    with ContractingClient(signer="alice", storage_home=tmp_path, vm_profile="xian_vm_v2") as c:
+        c.submit(CONTRACT, name="con_example")
+        yield c
 
 def test_owner_can_transfer_ownership(client):
     contract = client.get_contract_proxy("con_example")
@@ -168,16 +171,15 @@ in the fixture before submitting the contract under test.
 
 ## Deployment Snippet
 
-Only add deployment code when the user asks for it. Use source-backed
-deployment:
+The current Python network SDK defaults to V2. For deployment, submit the source.
 
 ```python
 from pathlib import Path
 
-from xian_py import Wallet, Xian, XianClientConfig
+from xian_py import Wallet, Xian
 
 wallet = Wallet("your_private_key")
-xian = Xian("http://127.0.0.1:26657", wallet=wallet, config=XianClientConfig(vm_profile="xian_vm_v2"))
+xian = Xian("http://127.0.0.1:26657", wallet=wallet)
 source = Path("contracts/con_example.s.py").read_text()
 
 tx = xian.deploy_contract(

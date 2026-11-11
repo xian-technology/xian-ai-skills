@@ -20,6 +20,10 @@ Use this skill for the current Xian shielded-note stack.
   contents without disclosing the spend key.
 - The same token can still expose public balances for deposit/withdraw and for
   integrations that operate on the token's public side.
+- Shielded note values, deposits, withdrawals and relayer fees use integer
+  units. Enforce the contract's note and fee bounds before proof generation.
+  A whole decimal argument still has decimal type and cannot satisfy an
+  `int` parameter. Keep roots, commitments and proof hex as encoded text.
 
 ## Main Components
 

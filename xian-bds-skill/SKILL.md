@@ -43,9 +43,9 @@ Use DEX candle `market_id` values reported by the indexer, often pair id values;
 do not invent token-pair strings.
 
 ```python
-from xian_py import Xian, XianClientConfig
+from xian_py import Xian
 
-xian = Xian("http://127.0.0.1:26657", config=XianClientConfig(vm_profile="xian_vm_v2"))
+xian = Xian("http://127.0.0.1:26657")
 
 status = xian.get_bds_status()
 blocks = xian.list_blocks(limit=20)
@@ -59,8 +59,11 @@ shielded_tags = xian.list_shielded_output_tags("tag-value", limit=100)
 dex_candles = xian.list_dex_candles(market_id="7", interval="1m", limit=100)
 ```
 
-If an MCP client is available, prefer typed MCP tools over a generic GraphQL
-escape hatch for the same reason: clearer schemas and safer agent behavior.
+The current Python client decodes V2 contract data recursively, including
+exact decimals and wide integers. A numeric-looking string stored by the
+contract remains text. Keep amounts exact when exporting indexed records.
+MCP tools render decimal amounts as strings and wide integers with
+`__big_int__`. BDS operator measurements can include fractional timings.
 
 ## BDS Requirement
 

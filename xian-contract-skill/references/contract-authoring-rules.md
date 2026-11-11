@@ -259,7 +259,11 @@ truncate toward zero at 30 places. Integer `//` rounds down. Use `quantize(value
 places, mode)` with a scale of 0–30 and `floor`, `ceil`, `toward_zero`, or
 `half_even`. The `sqrt` helper floors a square root to the decimal grid.
 `mul_div_floor` and `mul_div_ceil` divide an exact integer product by a
-positive integer and apply the named rounding rule.
+positive integer and apply the named rounding rule. Only integers support
+`//` and `%`. A decimal parameter accepts an exactly representable integer.
+Integer parameters reject decimals, even whole decimals. Booleans and strings
+retain their own types. Overflow or division by zero fails the call and
+rolls back its writes. See the [protocol numeric specification](https://github.com/xian-technology/xian-meta/blob/main/docs/NUMERIC_PROFILE_V2.md).
 
 ```python
 price = 10.5

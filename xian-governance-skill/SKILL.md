@@ -130,6 +130,10 @@ handle them like production credentials.
 - keep `xian-stack` scripts/backend machine-facing and deterministic
 - when changing validator policy, verify both contract semantics and runner
   expectations
+- V2 reward-split proposals require four nonnegative numbers whose exact sum
+  is one. For generic Python SDK arguments use values such as
+  `[Decimal("0.7"), 0, 0, Decimal("0.3")]` with `from decimal import Decimal`.
+  A generic JSON tool must encode each decimal as a `__fixed__` wrapper.
 - when changing operator lifecycle behavior, check that `xian node status`
   still reports a coherent local/runtime/live picture
 - when changing governance state patches, validate approval, scheduling, and

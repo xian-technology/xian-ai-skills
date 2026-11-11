@@ -113,18 +113,15 @@ Current wallet amount behavior:
 
 - direct send flow accepts both `.` and `,` as decimal separators in the UI
 - the wallet normalizes `,` to `.`
-- positive integers can be promoted to `bigint` when they exceed JS safe
-  integer range
+- keep normalized amount input as text through preview, approval and signing.
+  For generic V2 writes use `fixed(text)` from `@xian-tech/client` for a
+  decimal and `bigint` for an integer outside the safe JS range. Calling
+  `Number(text)` first can erase digits before a wallet displays the request
 - watched assets store decimals as display metadata
 
-Important distinction:
-
-- wallet UI input is convenience parsing
-- contract/runtime semantics still depend on the called function and token
-  contract
-
-So if the node/runtime expects a numeric value, do not confuse wallet parsing
-convenience with protocol-level numeric formats.
+The current TypeScript SDK defaults to V2. Check the called function's
+argument type and the token's settlement precision. In raw generic calls
+`"1.25"` is text and `{"__fixed__":"1.25"}` is a decimal.
 
 ## Network Settings
 

@@ -59,6 +59,9 @@ shared HTTP catalog:
 
 This tool contract requires `xian-mcp-server` version `0.1.1` or newer for V2 numbers.
 Use the `xian-dex` `0.2.0` bundle and interface for a fresh V2 chain.
+Supply MCP amount fields as decimal text, for example `"1.000000000000000001"`.
+Slippage on MCP plans is an integer number of basis points. Generic MCP
+contract kwargs use canonical `__fixed__` or `__big_int__` wrappers.
 
 - discovery: `dex_list_pairs`, `dex_get_pair`
 - quotes: `dex_quote_exact_in`, `dex_quote_exact_out`
@@ -99,10 +102,10 @@ uv add xian-tech-py
 
 ```python
 from datetime import datetime, timedelta, timezone
-from xian_py import Xian, Wallet, XianClientConfig
+from xian_py import Xian, Wallet
 
 wallet = Wallet("your_private_key")
-xian = Xian("http://127.0.0.1:26657", wallet=wallet, config=XianClientConfig(vm_profile="xian_vm_v2"))
+xian = Xian("http://127.0.0.1:26657", wallet=wallet)
 
 def deadline(minutes: int = 5) -> dict:
     timestamp = datetime.now(timezone.utc) + timedelta(minutes=minutes)
@@ -148,10 +151,11 @@ expected_out = amounts[-1]
 
 ```python
 fee_bps = xian.call("con_dex", "getTradeFeeBps", {})
+reserve_in, reserve_out = (reserve0, reserve1) if token0 == "currency" else (reserve1, reserve0)
 input_needed = xian.call("con_dex", "getAmountIn", {
     "amountOut": 50,
-    "reserveIn": reserve0,
-    "reserveOut": reserve1,
+    "reserveIn": reserve_in,
+    "reserveOut": reserve_out,
     "feeBps": fee_bps,
 })
 ```
@@ -243,7 +247,14 @@ tx = xian.send_tx(
 
 ### Multi-Hop
 
+Resolve the destination token's precision from its `get_metadata()` export.
+Use 30 when it has no declared precision and cap larger values at 30. This
+example assumes the destination specifies six places and the user allows
+1% slippage. The displayed minimum and the submitted `amountOutMin` match.
+
 ```python
+from decimal import Decimal, ROUND_FLOOR, localcontext
+
 path = [pair_a, pair_b]
 
 quoted = xian.call("con_dex", "getAmountsOut", {
@@ -252,9 +263,13 @@ quoted = xian.call("con_dex", "getAmountsOut", {
     "path": path,
 })
 
-from xian_runtime_types.decimal import ContractingDecimal
-
-min_out = ContractingDecimal(quoted[-1]) * ContractingDecimal("0.99")
+output_precision = 6
+with localcontext() as ctx:
+    ctx.prec = 100  # 91-digit V2 coefficient and the slippage multiplication
+    unit = Decimal(1).scaleb(-output_precision)
+    min_out = (Decimal(str(quoted[-1])) * Decimal("0.99")).quantize(unit, rounding=ROUND_FLOOR)
+if min_out == 0:
+    raise ValueError("minimum output is below one destination token unit")
 
 tx = xian.send_tx(
     contract="con_dex",

@@ -46,23 +46,31 @@ uv add "xian-tech-py[compile]"
 
 ## Quick Reference
 
+The current Python and TypeScript SDKs default to `xian_vm_v2`. Signing,
+simulation, reads and receipt decoding use the same profile. A client for
+a historical V1 node needs an explicit `XianClientConfig(vm_profile="xian_vm_v1")`
+in Python or `vmProfile: "xian_vm_v1"` in TypeScript. Low-level Python
+transaction helpers take `vm_profile` directly. The chain profile comes from
+genesis. A client setting cannot change how validators execute a contract.
+
 ```python
-from xian_py import Xian, XianAsync, Wallet, XianClientConfig
+from decimal import Decimal
+from xian_py import Wallet, Xian
 
 wallet = Wallet()
-xian = Xian("http://127.0.0.1:26657", wallet=wallet, config=XianClientConfig(vm_profile="xian_vm_v2"))
+xian = Xian("http://127.0.0.1:26657", wallet=wallet)
 
 balance = xian.token().balance_of(wallet.public_key)
 state = xian.state_key("currency", "balances", wallet.public_key).get()
 
 quote = xian.estimate_chi("currency", "transfer", {
     "to": "recipient",
-    "amount": 10,
+    "amount": Decimal("10.000000000000000000000000000001"),
 })
 
 tx = xian.token().transfer(
     "recipient",
-    10,
+    Decimal("10.000000000000000000000000000001"),
     mode="checktx",
     wait_for_tx=True,
 )
@@ -70,6 +78,25 @@ tx = xian.token().transfer(
 receipt = tx.receipt or xian.wait_for_tx(tx.tx_hash)
 events = xian.events("currency", "Transfer").list(limit=25)
 ```
+
+### Amounts at the API boundary
+
+- For generic contract kwargs, use Python `int` or `Decimal(text)`. Python
+  binary floats are rejected. An ordinary string remains a string. Token
+  convenience methods such as `transfer` also accept decimal text. V2
+  contract reads decode to Python integers and `ContractingDecimal` values.
+- In TypeScript pass `fixed("1.25")` from `@xian-tech/client` for a decimal
+  and `9007199254740993n` for a wide integer. Keep amount input as text until
+  conversion. Fractional or unsafe JavaScript numbers lose the source digits.
+- For MCP token and DEX amount fields, pass decimal text or a safe integer.
+  For generic MCP kwargs, pass `{"amount":{"__fixed__":"1.25"}}`. On the
+  V2 wire, integers outside ±(2^53−1) use `{"__big_int__":"9007199254740993"}`.
+  Wrapper text is canonical, with no exponent, plus sign, negative zero,
+  redundant leading zeros or fractional trailing zeros.
+- For a Xian–Solana bridge request, send `token_amount` as decimal text.
+  Enforce the token's configured precision before converting Solana amounts
+  to integer base units. Construct a Xian token transfer from the exact
+  human-unit amount. [Bridge API](https://github.com/xian-technology/xian-bridge#api)
 
 ## Wallets
 
@@ -109,9 +136,9 @@ pass `account_index` to select another account.
 ### Contract State
 
 ```python
-from xian_py import Xian, XianClientConfig
+from xian_py import Xian
 
-xian = Xian("http://127.0.0.1:26657", config=XianClientConfig(vm_profile="xian_vm_v2"))
+xian = Xian("http://127.0.0.1:26657")
 
 balance = xian.get_state("currency", "balances", "some_address")
 allowance = xian.get_state("currency", "approvals", "owner", "spender")
@@ -234,11 +261,11 @@ dex_candles = xian.list_dex_candles(market_id="7", interval="1m", limit=100)
 
 ```python
 import asyncio
-from xian_py import XianAsync, Wallet, XianClientConfig
+from xian_py import XianAsync, Wallet
 
 async def main():
     wallet = Wallet()
-    async with XianAsync("http://127.0.0.1:26657", wallet=wallet, config=XianClientConfig(vm_profile="xian_vm_v2")) as xian:
+    async with XianAsync("http://127.0.0.1:26657", wallet=wallet) as xian:
         balance, status = await asyncio.gather(
             xian.get_balance(wallet.public_key),
             xian.get_node_status(),

@@ -155,6 +155,12 @@ xian network join dev-validator \
 
 ## New Network / Private Network
 
+Use the V2 contract bundle and matching node build for a fresh
+`xian_vm_v2` network. Generate genesis once and distribute the same file,
+chain ID and runtime pins to every validator. Current Python and TypeScript
+network SDKs target V2 by default. A client that queries or signs for a
+historical V1 network must select V1 explicitly and use that network's RPC.
+
 ```bash
 xian network template list
 xian network create localnet-1 \

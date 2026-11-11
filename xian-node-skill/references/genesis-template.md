@@ -144,7 +144,9 @@ Equal voting power (`"power": "10"`) means each validator has equal influence. A
 For Xian, `app_state` can include initial contract deployments, balances,
 validator policy, governance policy, privacy metadata, and other chain assets.
 Prefer committed genesis bundles and `xian network create` over hand-writing
-this state.
+this state. Generate V2 genesis from the V2 bundle and pin its hash. Use the
+matching currency and protocol contracts. Genesis, state hashes, and execution
+policy are chain-specific.
 
 ## Deploying Genesis
 
