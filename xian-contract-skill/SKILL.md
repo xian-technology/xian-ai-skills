@@ -137,9 +137,11 @@ Transfer({"from": ctx.caller, "to": to, "amount": amount})
 
 ## Local Tests
 
-Install `xian-tech-contracting[v2]` for native tests and pass
-`vm_profile="xian_vm_v2"` to the local client. The bare local client defaults
-to V1. Test the public exports in isolated storage.
+Use the `xian-contracting` source checkout for native V2 tests. Run
+`uv sync --project xian-contracting --frozen --group dev` from its parent
+directory. The standard local client uses the same numeric rules as a fresh
+V2 chain. Test the public exports in isolated storage.
+[Contract source setup](https://github.com/xian-technology/xian-docs-web/blob/main/getting-started/dev-environment.md#contract-only-setup)
 
 ```python
 from pathlib import Path
@@ -151,7 +153,7 @@ CONTRACT = Path("contracts/con_example.s.py").read_text()
 
 @pytest.fixture
 def client(tmp_path):
-    with ContractingClient(signer="alice", storage_home=tmp_path, vm_profile="xian_vm_v2") as c:
+    with ContractingClient(signer="alice", storage_home=tmp_path) as c:
         c.submit(CONTRACT, name="con_example")
         yield c
 

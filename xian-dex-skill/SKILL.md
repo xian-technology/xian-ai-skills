@@ -96,8 +96,12 @@ slippage headroom becomes additional output rather than a refund.
 
 ## Setup
 
+Use sibling `xian-py` and `xian-contracting` source checkouts for the V2
+examples. Run from their parent directory. [Pinned SDK setup](https://github.com/xian-technology/xian-docs-web/blob/main/tools/xian-py.md#install)
+
 ```bash
-uv add xian-tech-py
+uv sync --project xian-py --frozen
+uv run --project xian-py --no-sync python your_dex_script.py
 ```
 
 ```python

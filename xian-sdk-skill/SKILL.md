@@ -14,23 +14,20 @@ Important packaging detail:
 
 ## Installation
 
-Inside a uv-managed Python project:
+The V2 examples use the source SDK. Check out the matching `xian-contracting`
+and `xian-py` revisions as sibling directories. From their parent directory
+run the following commands. The profile check prints `xian_vm_v2`.
+[Pinned SDK setup](https://github.com/xian-technology/xian-docs-web/blob/main/tools/xian-py.md#install)
 
 ```bash
-uv add xian-tech-py
-
-# Optional app helper clients
-uv add "xian-tech-py[app]"
-
-# Optional HD wallet support
-uv add "xian-tech-py[hd]"
-
-# Optional Ethereum wallet compatibility helpers
-uv add "xian-tech-py[eth]"
-
-# Optional offline compiler/artifact inspection helpers
-uv add "xian-tech-py[compile]"
+uv sync --project xian-py --frozen
+uv run --project xian-py --no-sync python -c 'from xian_py import XianClientConfig; print(XianClientConfig().vm_profile)'
 ```
+
+Add `--extra hd` for mnemonic wallets, `--extra eth` for Ethereum wallet
+compatibility, `--extra app` for application helpers or `--extra compile`
+for offline compiler inspection to the sync command as needed. Execute your
+script with `uv run --project xian-py --no-sync python your_script.py`.
 
 ## Default Workflow
 
@@ -48,7 +45,7 @@ uv add "xian-tech-py[compile]"
 
 The current Python and TypeScript SDKs default to `xian_vm_v2`. Signing,
 simulation, reads and receipt decoding use the same profile. A client for
-a historical V1 node needs an explicit `XianClientConfig(vm_profile="xian_vm_v1")`
+an archived V1 test fixture needs an explicit `XianClientConfig(vm_profile="xian_vm_v1")`
 in Python or `vmProfile: "xian_vm_v1"` in TypeScript. Low-level Python
 transaction helpers take `vm_profile` directly. The chain profile comes from
 genesis. A client setting cannot change how validators execute a contract.

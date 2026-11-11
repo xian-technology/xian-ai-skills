@@ -18,16 +18,15 @@ Important packaging detail:
 
 ## Installation
 
-```bash
-uv tool install xian-tech-cli
-xian --help
-```
-
-When you are working from a sibling source checkout instead of an installed
-release, keep the uv project boundary explicit:
+For the unreleased V2 defaults, use matching sibling checkouts of
+`xian-cli`, `xian-py`, `xian-contracting`, `xian-abci`, `xian-configs`
+and `xian-stack`. Run these commands from the workspace root. In the
+examples below, `xian` refers to `xian-cli/.venv/bin/xian`.
+[Workspace installation](https://github.com/xian-technology/xian-docs-web/blob/main/node/installation.md#prepare-the-workspace)
 
 ```bash
-uv run --project /path/to/xian-cli xian --help
+uv sync --project xian-cli --frozen
+uv run --project xian-cli --no-sync xian --help
 ```
 
 ## Core Model
@@ -159,7 +158,7 @@ Use the V2 contract bundle and matching node build for a fresh
 `xian_vm_v2` network. Generate genesis once and distribute the same file,
 chain ID and runtime pins to every validator. Current Python and TypeScript
 network SDKs target V2 by default. A client that queries or signs for a
-historical V1 network must select V1 explicitly and use that network's RPC.
+V1 test fixture must select V1 explicitly and use the fixture's RPC.
 
 ```bash
 xian network template list
