@@ -259,9 +259,9 @@ Runtime tuning that belongs in the profile is also exposed here:
 
 - `--enable-pruning` / `--blocks-to-keep`
 - `--simulation-enabled`, `--simulation-max-concurrency`,
-  `--simulation-timeout-ms`, and `--simulation-max-chi` (the node simulates
-  with `min(simulation_max_chi, max_tx_chi)`, so this can only lower the
-  chain's per-transaction cap)
+  `--simulation-timeout-ms`, and `--simulation-max-chi` (optional and unset
+  by default: the node then simulates with the chain's `max_tx_chi`; a set
+  cap can only lower it)
 - `--block-policy-mode` and `--block-policy-interval`
 - `--app-log-level`, `--app-log-json`, `--app-log-rotation-hours`, and
   `--app-log-retention-days`
