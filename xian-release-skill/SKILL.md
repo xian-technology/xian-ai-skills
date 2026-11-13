@@ -19,8 +19,11 @@ explicitly asks for fork-specific work there.
 Use the stable release flow by default. Do not pass `--beta` or another
 prerelease channel unless the user explicitly requests a prerelease.
 
+Run it from the `xian-stack` checkout inside the sibling workspace; it finds
+the other repos next to it:
+
 ```bash
-cd /Users/endogen/Projekte/xian/xian-stack
+cd xian-stack
 python3 ./scripts/release_orchestrator.py plan
 python3 ./scripts/release_orchestrator.py apply
 ```
@@ -39,7 +42,8 @@ The orchestrator is the preferred path for repos it models because it:
 Release dependency providers before consumers:
 
 1. `xian-contracting` shared packages:
-   `compiler-core-vX.Y.Z`, `accounts-vX.Y.Z`, `runtime-types-vX.Y.Z`, `zk-vX.Y.Z`
+   `accounts-vX.Y.Z`, `runtime-types-vX.Y.Z`, `compiler-core-vX.Y.Z`,
+   `vm-core-vX.Y.Z`, `zk-vX.Y.Z`
 2. `xian-contracting`: `contracting-vX.Y.Z`
 3. `xian-py`: `vX.Y.Z`
 4. `xian-abci`: `vX.Y.Z`

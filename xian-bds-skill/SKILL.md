@@ -62,8 +62,20 @@ dex_candles = xian.list_dex_candles(market_id="7", interval="1m", limit=100)
 The current Python client decodes V2 contract data recursively, including
 exact decimals and wide integers. A numeric-looking string stored by the
 contract remains text. Keep amounts exact when exporting indexed records.
-MCP tools render decimal amounts as strings and wide integers with
-`__big_int__`. BDS operator measurements can include fractional timings.
+In raw BDS rows and GraphQL JSON columns (event `data`, state values) a decimal
+is `{"__fixed__": "1.5"}` and an integer outside the safe JavaScript range is
+`{"__big_int__": "..."}`. MCP tools render decimal amounts as strings and wide
+integers with `__big_int__`. BDS operator measurements can include fractional
+timings.
+
+Indexed events carry a monotonically increasing `id`. Persist the last
+processed `id` and pass it as `after_id=` on the next `list_events(...)` poll
+for restart-safe consumers.
+
+The BDS database, recovery spool and snapshots are bound to the node's
+execution policy (`xvm-execution-14`, `xvm-gas-6`, `xvm-2`, `xian-set-1`).
+An index, spool or snapshot from another execution revision is rejected;
+rebuild a fresh index for a new chain instead of relabelling old data.
 
 ## BDS Requirement
 

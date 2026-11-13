@@ -44,6 +44,7 @@ Important commands include:
 - `xian node stop`
 - `xian node status`
 - `xian snapshot restore`
+- `xian recovery validate` / `xian recovery apply`
 - `xian doctor`
 
 Use `xian-cli` when the task is about what an operator should do. Do not send
@@ -73,8 +74,33 @@ For live validator/delegation/governance validation, prefer the focused
 make localnet-protocol-safety
 ```
 
-This exercises a real 5-validator localnet seeded from canonical `testnet`
-configuration.
+This exercises a real 5-validator localnet whose genesis comes from the
+`testnet` contract bundle in `xian-configs`
+(`LOCALNET_PROTOCOL_SAFETY_GENESIS_NETWORK`).
+
+## Contract Surface
+
+On-chain policy lives in the `xian-configs` system contracts:
+
+- `validators`: membership, bonding and votes. Proposals go through
+  `propose_vote(type_of_vote, arg)`, `vote(...)` and `expire_vote(...)`.
+  Vote types are `add_member`, `remove_member`, `jail_member`,
+  `unjail_member`, `slash_member`, `set_member_power`,
+  `change_registration_fee`, `chi_cost_change`, `change_types`,
+  `update_policy`, `reward_change`, `dao_payout` and `topic_vote`.
+  Operators use `register`, `update_registration`, `announce_leave`, `leave`,
+  `bond_self`/`unbond_self`, `delegate`/`undelegate` and `claim_unbond`; reads
+  include `get_active_validators`, `get_validator`, `get_policy_config` and
+  `get_pending_candidates`.
+- `governance`: state patches and governed contract calls
+  (`propose_state_patch`, `propose_contract_call`, `vote`, `get_patch`,
+  `is_patch_approved`).
+- `rewards`, `chi_cost`, `dao`: reward split, chi price and DAO treasury,
+  changed only through `validators` votes.
+
+Neither contract code nor a governed state patch can change the protected
+`__execution_policy` record. The fee policy (`__fee_policy`: fee mode and chi
+caps) is set in genesis and is outside every contract's writable namespace.
 
 The backend command surface also exposes the same flow through
 `localnet-protocol-safety` with explicit flags such as:

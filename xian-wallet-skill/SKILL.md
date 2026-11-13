@@ -64,7 +64,8 @@ The browser wallet is provider-first:
 
 Important provider approval kinds:
 
-- `xian_requestAccounts`
+- `xian_requestAccounts` (connect)
+- `xian_switchChain`
 - `xian_signMessage`
 - `xian_signTransaction`
 - `xian_sendTransaction`

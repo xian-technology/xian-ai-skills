@@ -302,6 +302,9 @@ For contract events, prefer indexed polling with `list_events(...)` and an
   default) counts supplied chi, so oversupplying also shrinks block capacity.
 - On paid networks the balance must cover `chi_supplied / chi_rate`; for a
   `currency.transfer` the amount plus that reservation must fit the balance.
+  `chi_rate` (chi per XIAN) is chain state, read it with
+  `xian.get_state("chi_cost", "S", "value")` instead of hardcoding it; only a
+  validator governance vote changes it.
 - Simulation runs with at most the chain's `max_tx_chi`, so a transaction that
   needs more fails in simulation rather than after submission.
 - With current `xian-runtime-types`, `str()` of a returned `ContractingDecimal`
