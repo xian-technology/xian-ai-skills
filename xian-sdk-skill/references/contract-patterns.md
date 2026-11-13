@@ -176,13 +176,19 @@ allowed = allowances[owner, spender]
 
 ### Mutable Variable Helpers
 
+A `Variable` holding a dict supports `update(...)`; one holding a list supports
+`append`, `extend`, `insert`, `remove`, `clear` and `pop`. Each call rewrites
+the whole stored value. Item access on the `Variable` itself
+(`settings["mode"] = mode`) is not supported: use `update`, or `get()`, change
+the copy and `set(...)` it back.
+
 ```python
 settings = Variable(default_value={})
 queue = Variable(default_value=[])
 
 @export
 def configure(mode: str):
-    settings["mode"] = mode
+    settings.update({"mode": mode})
 
 @export
 def enqueue(item: str):

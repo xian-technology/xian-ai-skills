@@ -163,9 +163,18 @@ Rules:
 - `ForeignVariable`/`ForeignHash` need `foreign_contract=` and `foreign_name=`
   and reject `contract=`/`name=` (`E023`).
 - `ForeignVariable` and `ForeignHash` are read-only.
+- Keep storage names short: admission rejects a `Variable` name longer than
+  446 bytes and a `Hash` name longer than 445 bytes (`E024`), so that
+  `contract.name` always fits a storage key.
 - `Hash` supports at most 16 key dimensions.
 - Hash key components must not contain `:` or `.`.
-- The encoded hash key must be at most 1024 bytes.
+- The whole storage key (`contract.hash:key1:key2`, UTF-8 bytes) must be at
+  most 511 bytes. A write with a longer key fails the transaction; a lookup
+  with a longer key finds nothing.
+- A `Variable` holding a dict supports `update(...)`; one holding a list
+  supports `append`, `extend`, `insert`, `remove`, `clear` and `pop`. Item
+  access on the `Variable` itself is not supported: `get()`, change the copy,
+  then `set(...)`.
 - Hash slices are forbidden.
 - `key in my_hash` is forbidden.
 - Missing hash keys return the configured `default_value`, otherwise `None`.
@@ -210,8 +219,10 @@ Rules:
 - emitted values must match declared types
 - each emitted value must be at most 1024 bytes once string-encoded
 
-Allowed event value types are `str`, `int`, `decimal`, `bool`, and
-decimal-backed values.
+Prefer `str`, `int`, `decimal` and `bool` event values; they are what wallets
+and indexers consume. The runtime also accepts `bytes`, `bytearray`, `set`
+and `frozenset` values, but not `datetime` or `timedelta` (store or return
+those instead).
 
 Emit events after state changes that consumers care about:
 
@@ -323,12 +334,14 @@ security, lotteries with value, validator selection, or secret generation.
 
 ## Limits And Metering
 
-Important current limits:
+Important current limits (execution revision `xvm-execution-14`, gas schedule
+`xvm-gas-6`, contract admission `xian-admission-3`):
 
 - execution depth (recursion plus cross-contract reentry): 128 frames
 - max hash dimensions: 16
-- max hash key size: 1024 bytes
+- max storage key size (whole key, UTF-8): 511 bytes
 - max contract source submission size: 128 KiB
+- max aggregate write capacity per transaction: 128 KiB
 - max `range(...)` / sequence repetition length: 131,072 entries
 - max binary allocation / string repetition size: 128 KiB
 - no general return-value size cap; return bytes are metered
@@ -341,12 +354,12 @@ Current byte costs, in raw meter units (1,000 raw units = 1 chi;
 - transaction bytes: 1 unit / byte
 - return values: 1 unit / byte
 
-Size-dependent work is element work at 24 raw units per unit (execution
-revision `xvm-execution-12`, gas schedule `xvm-gas-6`): per comparison, per
-container member copied or allocated, per node of a value crossing a contract
-boundary, per 64 bytes of text copied, per 128 bytes compared, per 8 bytes
-searched by string methods (`find`, `replace`, `split(sep)`, slicing) and per
-2 bytes of per-character work (`upper()`, `isdigit()`). Dictionary lookups and
+Size-dependent work is element work at 24 raw units per unit (gas schedule
+`xvm-gas-6`): per comparison, per container member copied or allocated, per
+node of a value crossing a contract boundary, per 64 bytes of text copied, per
+128 bytes compared, per 8 bytes searched or copied by string operations
+(`find`, `in`, `replace`, `split(sep)`, `join`, slicing) and per 2 bytes of
+per-character work (`upper()`, `isdigit()`, `int(text)`). Dictionary lookups and
 updates are hash-indexed and do not grow with dictionary size. `Hash.all()`,
 `Hash.clear()` and `clone_from` cost 2,560 raw units per scanned entry.
 

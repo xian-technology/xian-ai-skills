@@ -89,7 +89,10 @@ guards. Prefer clear failure messages because users and bots will see them.
 - Do not use `in` with `Hash`; read the key and compare with `None` or the
   configured default value.
 - Do not pass `contract=` or `name=` to `Variable`, `Hash`, or `LogEvent`.
-- Keep hash keys free of `:` and `.`, and keep return payloads small.
+- Keep hash keys free of `:` and `.` and the whole storage key
+  (`contract.hash:key`) within 511 bytes; keep return payloads small.
+- Do not index a `Variable` (`settings["k"] = v`); use `settings.update(...)`
+  or `get()`/`set(...)`.
 
 ## State And Events
 
