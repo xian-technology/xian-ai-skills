@@ -1,9 +1,8 @@
-# Genesis File Template
+# Genesis File Reference
 
-Prefer the current CLI or stack generators for normal work. `xian network
-create` can render a local genesis from a bundle and validator material, and
-`xian-stack` localnet init creates multi-node development homes under
-`.localnet/`.
+Do not hand-write Xian genesis. Generate it with the CLI or the stack, which
+build the contract state from a committed `xian-configs` bundle, compute its
+state root and write a matching CometBFT genesis:
 
 ```bash
 xian network create localnet-1 --chain-id xian-localnet-1 \
@@ -16,143 +15,108 @@ xian network create localnet-1 --chain-id xian-localnet-1 \
 LOCALNET_NODES=5 make localnet-init
 ```
 
-Use this reference only when you are inspecting or deliberately editing raw
-CometBFT genesis material. A genesis file defines:
+Use this reference only to inspect generated genesis. Editing serialized
+state or balances by hand breaks the state root, and the node refuses to
+start.
 
-- Chain ID and initial time
-- Consensus parameters
-- Initial validators
-- Initial contract state (optional)
+## Layout
 
-## Minimal Genesis
+A generated `config/genesis.json` has these top-level fields:
 
 ```json
 {
-  "genesis_time": "2024-01-01T00:00:00.000000000Z",
-  "chain_id": "xian-custom-1",
-  "initial_height": "1",
+  "genesis_time": "2026-11-13T18:22:43.179998Z",
+  "chain_id": "xian-localnet-1",
+  "initial_height": "0",
   "consensus_params": {
-    "block": {
-      "max_bytes": "22020096",
-      "max_gas": "-1"
-    },
+    "block": {"max_bytes": "22020096", "max_gas": "-1", "time_iota_ms": "1000"},
     "evidence": {
       "max_age_num_blocks": "100000",
       "max_age_duration": "172800000000000",
       "max_bytes": "1048576"
     },
-    "validator": {
-      "pub_key_types": ["ed25519"]
-    },
-    "version": {
-      "app": "0"
-    },
-    "abci": {
-      "vote_extensions_enable_height": "0"
-    }
+    "validator": {"pub_key_types": ["ed25519"]},
+    "version": {}
   },
   "validators": [
     {
       "address": "<VALIDATOR_ADDRESS>",
-      "pub_key": {
-        "type": "tendermint/PubKeyEd25519",
-        "value": "<BASE64_PUBKEY>"
-      },
+      "pub_key": {"type": "tendermint/PubKeyEd25519", "value": "<BASE64_PUBKEY>"},
       "power": "10",
-      "name": "genesis-validator"
+      "name": "localnet-1"
     }
   ],
-  "app_hash": "",
-  "app_state": {}
+  "app_hash": "<STATE_ROOT_HEX>",
+  "abci_genesis": {
+    "hash": "<STATE_ROOT_HEX>",
+    "number": 0,
+    "genesis": [
+      {"key": "__execution_policy", "value": {"execution_revision": "xvm-execution-14", "...": "..."}},
+      {"key": "__fee_policy", "value": {"tx_fee_mode": "paid_metered", "max_tx_chi": 200000, "max_block_chi": 500000}},
+      {"key": "currency.balances:<ACCOUNT>", "value": "..."}
+    ],
+    "origin": {"sender": "<FOUNDER_PUBLIC_KEY>", "signature": "<SIGNATURE>"}
+  }
 }
 ```
 
-## Fields Explanation
+Xian keeps its application state in `abci_genesis`, not in CometBFT's
+`app_state`:
 
-### Required Fields
+| Field | Meaning |
+|-------|---------|
+| `abci_genesis.genesis` | Ordered `{key, value}` state entries: system contracts (`currency`, `validators`, `governance`, `dao`, `rewards`, `chi_cost`, `zk_registry`, ...) and the protected records `__execution_policy`, `__fee_policy` and `__runtime_features.*` |
+| `abci_genesis.hash` | State root of those entries (`xian-state-root-v3`) |
+| `app_hash` | The same state root, so CometBFT's first block commits to it |
+| `abci_genesis.origin` | Founder public key and signature over the genesis block (empty when no founder key signed it) |
 
-| Field | Description |
-|-------|-------------|
-| `genesis_time` | ISO 8601 timestamp for chain start |
-| `chain_id` | Unique network identifier (e.g., `xian-testnet-1`) |
-| `validators` | Initial validator set with their public keys and voting power |
+At InitChain the node requires exactly one `__execution_policy` matching its
+runtime and a valid `__fee_policy`, and it recomputes the state root and
+compares it with `abci_genesis.hash`.
 
-### Validator Entry
+## Validator Entry
 
 ```json
 {
-  "address": "hex-encoded validator address (first 20 bytes of pubkey sha256)",
+  "address": "hex-encoded validator address (first 20 bytes of the pubkey sha256)",
   "pub_key": {
     "type": "tendermint/PubKeyEd25519",
     "value": "base64-encoded 32-byte ed25519 public key"
   },
-  "power": "voting power (usually 10 for equal weight)",
+  "power": "voting power (10 by default)",
   "name": "human-readable name"
 }
 ```
 
-### Generating Validator Address
+The CometBFT validator set must match the active members that the
+`validators` contract state in `abci_genesis` records; the generators keep the
+two in sync.
+
+### Deriving A Validator Address
 
 ```python
-import hashlib
 import base64
+import hashlib
 
 def pubkey_to_address(pubkey_hex: str) -> str:
-    """Convert ed25519 pubkey to CometBFT address."""
-    pubkey_bytes = bytes.fromhex(pubkey_hex)
-    sha = hashlib.sha256(pubkey_bytes).digest()
-    return sha[:20].hex().upper()
+    """Convert an ed25519 public key to its CometBFT address."""
+    return hashlib.sha256(bytes.fromhex(pubkey_hex)).digest()[:20].hex().upper()
 
 def pubkey_to_base64(pubkey_hex: str) -> str:
-    """Convert hex pubkey to base64 for genesis."""
+    """Convert a hex public key to the base64 form used in genesis."""
     return base64.b64encode(bytes.fromhex(pubkey_hex)).decode()
 ```
 
-## Multi-Validator Genesis
+## Distributing Genesis
 
-For a network with multiple validators:
-
-```json
-{
-  "validators": [
-    {
-      "address": "ADDR1",
-      "pub_key": {"type": "tendermint/PubKeyEd25519", "value": "KEY1"},
-      "power": "10",
-      "name": "validator-1"
-    },
-    {
-      "address": "ADDR2", 
-      "pub_key": {"type": "tendermint/PubKeyEd25519", "value": "KEY2"},
-      "power": "10",
-      "name": "validator-2"
-    },
-    {
-      "address": "ADDR3",
-      "pub_key": {"type": "tendermint/PubKeyEd25519", "value": "KEY3"},
-      "power": "10",
-      "name": "validator-3"
-    }
-  ]
-}
-```
-
-Equal voting power (`"power": "10"`) means each validator has equal influence. Adjust for weighted voting.
-
-## Initial State (`app_state`)
-
-For Xian, `app_state` can include initial contract deployments, balances,
-validator policy, governance policy, privacy metadata, and other chain assets.
-Prefer committed genesis bundles and `xian network create` over hand-writing
-this state. Generate V2 genesis from the V2 bundle and pin its hash. Use the
-matching currency and protocol contracts. Genesis, state hashes, and execution
-policy are chain-specific.
-
-## Deploying Genesis
-
-1. Prefer `xian network create ... --init-node` or `make localnet-init`.
-2. If you are doing a raw low-level setup, place the file at
-   `.cometbft/config/genesis.json`.
-3. All validators must use identical genesis.
-4. Start nodes after the validator keys and peer seeds match the same network.
-   The first block is created once 2/3+ voting power is online.
+1. Generate once with `xian network create ... --init-node` (or
+   `make localnet-init` for local multi-node work).
+2. Give every node the same file. Compare installed copies as bytes and
+   record the SHA-256; the node-home writer can reformat JSON, so pick the
+   bootstrap home's `config/genesis.json` as the canonical bytes.
+3. Each node keeps its own validator key and P2P key; never copy another
+   node's `priv_validator_key.json`, `node_key.json` or signing state.
+4. Start nodes after validator keys and peers match the same network. The first
+   block is produced once more than two-thirds of the voting power is online.
+5. A different allocation, fee policy or validator set means regenerating
+   genesis before launch, never editing it afterwards.

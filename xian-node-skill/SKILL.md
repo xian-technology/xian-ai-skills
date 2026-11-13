@@ -9,7 +9,14 @@ Use this skill for the current Xian operator flow. The current implementation is
 manifest/profile driven: `xian network create` and `xian network join` write
 operator artifacts, `xian node init` materializes the CometBFT home, and
 `xian node start|stop|status|health|endpoints` delegates runtime work to
-`xian-stack`.
+`xian-stack`. `xian setup node` is the interactive (or `--plan`/`--yes`)
+wrapper around the same steps.
+
+There is no active public testnet or mainnet for the current codebase. The
+checked-in `testnet` and `mainnet` manifests in `xian-configs` are presets and
+launch-rehearsal assets; their registry images are older V1-era builds, not a
+release of the current V2 runtime. Real networks are operator-managed: join
+them from the coordinator's accepted manifest with `--network-manifest`.
 
 Important packaging detail:
 
@@ -56,9 +63,10 @@ Default production posture:
 xian network template list
 xian keys validator generate --out-dir ./keys/validator-1
 
-# Join a manifest-backed network
+# Join an operator-managed network from its accepted manifest
 xian network join validator-1 \
-  --network testnet \
+  --network private-net \
+  --network-manifest /path/to/private-net/manifest.json \
   --template consortium-5 \
   --moniker "validator-1" \
   --validator-key-ref ./keys/validator-1/validator_key_info.json \
@@ -75,11 +83,13 @@ xian doctor validator-1
 xian node stop validator-1
 ```
 
-Use the network names that are present in the operator's `xian-configs`
-checkout or passed via `--network-manifest`. Current examples use `testnet` and
-`devnet`. The `mainnet` manifest can exist as launch-planning/rehearsal material;
-do not make it a public default or add public endpoints unless an accepted launch
-manifest and launch gates explicitly say to do so.
+`--network` names the network; `--network-manifest` points at the accepted
+manifest and overrides local and canonical lookup. Without it the CLI resolves
+`./networks/<name>/manifest.json` and then the `xian-configs` checkout
+(`local`, `devnet`, `testnet`, `mainnet`). Do not treat the checked-in
+`testnet` or `mainnet` manifest as a live network, make it a public default, or
+add public endpoints unless an accepted launch manifest and launch gates
+explicitly say to do so.
 
 ## Join A Manifest-Backed Network
 
@@ -94,7 +104,8 @@ xian keys validator generate --out-dir ./keys/validator-1
 
 ```bash
 xian network join validator-1 \
-  --network testnet \
+  --network private-net \
+  --network-manifest /path/to/private-net/manifest.json \
   --template consortium-5 \
   --moniker "validator-1" \
   --validator-key-ref ./keys/validator-1/validator_key_info.json \
@@ -110,7 +121,8 @@ xian node endpoints validator-1
 
 ```bash
 xian network join bds-1 \
-  --network testnet \
+  --network private-net \
+  --network-manifest /path/to/private-net/manifest.json \
   --template single-node-indexed \
   --moniker "bds-1" \
   --enable-bds \
@@ -128,7 +140,8 @@ snapshot explicitly or rely on one in the manifest/profile:
 
 ```bash
 xian network join validator-1 \
-  --network testnet \
+  --network private-net \
+  --network-manifest /path/to/private-net/manifest.json \
   --template consortium-5 \
   --validator-key-ref ./keys/validator-1/validator_key_info.json \
   --snapshot-url https://example.invalid/xian-snapshot.tar.gz \
@@ -144,7 +157,8 @@ published canonical image.
 
 ```bash
 xian network join dev-validator \
-  --network testnet \
+  --network private-net \
+  --network-manifest /path/to/private-net/manifest.json \
   --template consortium-5 \
   --moniker "dev-validator" \
   --node-image-mode local_build \
@@ -174,7 +188,10 @@ xian node status localnet-1
 ```
 
 Use `xian network create` when you need a new private network definition rather
-than joining a canonical one.
+than joining an existing one. `single-node-dev` enables BDS, read-only
+GraphQL/GraphiQL, the dashboard, Prometheus and Grafana, with five-second
+periodic blocks; `single-node-indexed` is the same service set with on-demand
+blocks; `consortium-5` is a five-validator shared-network shape.
 
 The chain fee policy is chosen here and nowhere else. `__fee_policy` holds
 `tx_fee_mode`, `max_tx_chi` and `max_block_chi` in every fee mode (defaults
@@ -183,10 +200,31 @@ The chain fee policy is chosen here and nowhere else. `__fee_policy` holds
 `--max-block-chi`, and the manifest records the canonical `fee_policy`. The
 rules are `0 < max_tx_chi <= max_block_chi <= 10,000,000`, with `max_tx_chi`
 at most the VM ceiling of 1,000,000. Node profiles and `xian.toml` that set any
-of these keys are rejected. The block cap counts the chi each transaction
-supplies, so clients that oversupply chi reduce block capacity. In
-`xian-stack` the genesis inputs are `XIAN_TX_FEE_MODE`, `XIAN_MAX_TX_CHI` and
-`XIAN_MAX_BLOCK_CHI`.
+of these keys are rejected, and `network join` has no fee flags. The block cap
+counts the chi each transaction supplies, so clients that oversupply chi reduce
+block capacity. The fee price (chi per XIAN) is chain state too: the
+`chi_cost` contract's `S["value"]`, seeded in genesis and changed only by a
+validator `chi_cost_change` vote. In `xian-stack` the genesis inputs are
+`XIAN_TX_FEE_MODE`, `XIAN_MAX_TX_CHI` and `XIAN_MAX_BLOCK_CHI`.
+
+## Execution Policy And Upgrades
+
+Genesis commits `__execution_policy`: execution revision `xvm-execution-14`,
+gas schedule `xvm-gas-6`, bytecode `xvm-2`, set codec `xian-set-1`, contract
+admission `xian-admission-3` and transaction admission
+`xian-fastpath-admission-2`. The node checks that exact record in genesis, in
+persisted state and against its native runtime before it bootstraps contracts
+or replaces state, and refuses to start on any mismatch. Each execution
+revision changes transaction results or app hashes (revision 14 also uses state
+root `xian-state-root-v3`), so a node home created under an earlier revision
+cannot be started with a newer image: start a fresh chain, or replay old
+history with its own pinned image. BDS spools/snapshots and application
+snapshots carry the policy and are rejected across revisions.
+
+Blocks always execute serially. The speculative parallel executor and its
+`parallel_execution_*` settings were removed; a `xian.toml` that still sets
+one of those keys is rejected at startup, and the CLI no longer offers the
+flags.
 
 ## Optional Runtime Layers
 
@@ -205,7 +243,8 @@ Example:
 
 ```bash
 xian network join agent-node \
-  --network testnet \
+  --network private-net \
+  --network-manifest /path/to/private-net/manifest.json \
   --template single-node-indexed \
   --enable-bds \
   --enable-dashboard \
@@ -271,7 +310,12 @@ Use:
 xian doctor validator-1
 xian doctor validator-1 --skip-live-checks
 xian snapshot restore validator-1
+xian recovery validate ./recovery-plan.json validator-1
+xian recovery apply ./recovery-plan.json validator-1 --dry-run
 ```
+
+`xian recovery validate|apply` checks and applies an operator recovery plan to
+a local node home (with a pre-recovery backup unless `--skip-backup`).
 
 Only run `snapshot restore` when the effective network/profile has a snapshot
 URL or you pass one explicitly.
@@ -310,7 +354,8 @@ Do not add legacy keyword wrappers around `render_node_configs`,
 
 ## Localnet Validation
 
-For a clean five-node topology smoke in `xian-stack`:
+For a clean five-node topology smoke in `xian-stack` (the Make default is four
+nodes):
 
 ```bash
 LOCALNET_NODES=5 make localnet-init localnet-build localnet-up

@@ -84,7 +84,8 @@ standalone ad hoc process:
 
 ```bash
 xian network join shielded-node \
-  --network testnet \
+  --network private-net \
+  --network-manifest /path/to/private-net/manifest.json \
   --template single-node-indexed \
   --enable-bds \
   --enable-shielded-relayer \
@@ -139,9 +140,12 @@ When you need end-to-end coverage, prefer the stack harnesses instead of
 isolated contract tests:
 
 ```bash
-make -C /path/to/xian-stack localnet-e2e
+make -C /path/to/xian-stack localnet-e2e LOCALNET_E2E_REQUIRE_SHIELDED=1
 ```
 
-The regular harness covers the shielded-note-token flow and relayer-facing
-integration. The VM-focused harness proves the same product path under the
-fixed `xian_vm_v2` runtime and enforces the runtime report.
+The harness runs the shielded-note-token flow and relayer-facing integration
+as phase `15-shielded-note-token` on the `xian_vm_v2` runtime. It needs the
+native `xian_zk._native` binding in the stack environment. Without
+`LOCALNET_E2E_REQUIRE_SHIELDED=1` a developer run treats that phase as optional
+and may skip it, so check the phase summary; `make release-safety` always
+requires it.
