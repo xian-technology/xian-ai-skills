@@ -176,6 +176,18 @@ xian node status localnet-1
 Use `xian network create` when you need a new private network definition rather
 than joining a canonical one.
 
+The chain fee policy is chosen here and nowhere else. `__fee_policy` holds
+`tx_fee_mode`, `max_tx_chi` and `max_block_chi` in every fee mode (defaults
+`paid_metered`, 200,000 and 500,000 chi); `network create` and
+`setup node --mode local` take `--tx-fee-mode`, `--max-tx-chi` and
+`--max-block-chi`, and the manifest records the canonical `fee_policy`. The
+rules are `0 < max_tx_chi <= max_block_chi <= 10,000,000`, with `max_tx_chi`
+at most the VM ceiling of 1,000,000. Node profiles and `xian.toml` that set any
+of these keys are rejected. The block cap counts the chi each transaction
+supplies, so clients that oversupply chi reduce block capacity. In
+`xian-stack` the genesis inputs are `XIAN_TX_FEE_MODE`, `XIAN_MAX_TX_CHI` and
+`XIAN_MAX_BLOCK_CHI`.
+
 ## Optional Runtime Layers
 
 The node profile can enable:
@@ -208,11 +220,12 @@ Runtime tuning that belongs in the profile is also exposed here:
 
 - `--enable-pruning` / `--blocks-to-keep`
 - `--simulation-enabled`, `--simulation-max-concurrency`,
-  `--simulation-timeout-ms`, and `--simulation-max-chi`
+  `--simulation-timeout-ms`, and `--simulation-max-chi` (the node simulates
+  with `min(simulation_max_chi, max_tx_chi)`, so this can only lower the
+  chain's per-transaction cap)
 - `--parallel-execution-enabled`, `--parallel-execution-workers`, and
   `--parallel-execution-min-transactions`
 - `--block-policy-mode` and `--block-policy-interval`
-- `--tx-fee-mode`, `--free-tx-max-chi`, and `--free-block-max-chi`
 - `--app-log-level`, `--app-log-json`, `--app-log-rotation-hours`, and
   `--app-log-retention-days`
 
@@ -242,6 +255,12 @@ Expect it to surface:
 xian node endpoints validator-1
 xian node health validator-1
 ```
+
+The node's application metrics listen on `0.0.0.0:9108` inside the container.
+The profile's `advanced.metrics.host` and `advanced.metrics.port` only choose
+the host-side publish address and port (default `127.0.0.1:9108`; stack env
+`XIAN_APP_METRICS_HOST`/`XIAN_APP_METRICS_PORT`). A non-loopback host needs the
+stack's public-metrics opt-in.
 
 Use:
 

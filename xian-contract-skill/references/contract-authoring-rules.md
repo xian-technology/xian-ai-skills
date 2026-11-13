@@ -269,7 +269,9 @@ positive integer and apply the named rounding rule. Only integers support
 `//` and `%`. A decimal parameter accepts an exactly representable integer.
 Integer parameters reject decimals, even whole decimals. Booleans and strings
 retain their own types. Overflow or division by zero fails the call and
-rolls back its writes. See the [protocol numeric specification](https://github.com/xian-technology/xian-meta/blob/main/docs/NUMERIC_PROFILE_V2.md).
+rolls back its writes. `str(value)` of a decimal is plain fixed-point text
+with no exponent and no trailing fractional zeros (`str(decimal("1e6"))` is
+`"1000000"`). See the [protocol numeric specification](https://github.com/xian-technology/xian-meta/blob/main/docs/NUMERIC_PROFILE_V2.md).
 
 ```python
 price = 10.5
@@ -339,12 +341,28 @@ Current byte costs, in raw meter units (1,000 raw units = 1 chi;
 - transaction bytes: 1 unit / byte
 - return values: 1 unit / byte
 
+Size-dependent work is element work at 24 raw units per unit (execution
+revision `xvm-execution-12`, gas schedule `xvm-gas-6`): per comparison, per
+container member copied or allocated, per node of a value crossing a contract
+boundary, per 64 bytes of text copied, per 128 bytes compared, per 8 bytes
+searched by string methods (`find`, `replace`, `split(sep)`, slicing) and per
+2 bytes of per-character work (`upper()`, `isdigit()`). Dictionary lookups and
+updates are hash-indexed and do not grow with dictionary size. `Hash.all()`,
+`Hash.clear()` and `clone_from` cost 2,560 raw units per scanned entry.
+
+Budget limits: the chain's genesis fee policy caps one transaction at
+`max_tx_chi` (200,000 chi by default) and one block at `max_block_chi`
+(500,000, counted over supplied chi); the VM never runs a V2 transaction past
+1,000,000 chi. Clients should supply a simulated estimate plus a small margin.
+
 Practical guidance:
 
 - keep keys compact
 - avoid large return dicts and giant event fields
 - avoid write-heavy loops over unbounded user-controlled data
 - cache repeated reads into local variables and write once
+- keep each export well below 200,000 chi; paginate scans and batch across calls
+- grow lists with `append`, not `items += [x]`
 
 ## Patterns
 

@@ -295,7 +295,18 @@ For contract events, prefer indexed polling with `list_events(...)` and an
 
 - Prefer `mode="checktx", wait_for_tx=True` or `mode="commit"` for writes that
   feed a later step.
-- Prefer `estimate_chi(...)` over hardcoding chi values.
+- Prefer `estimate_chi(...)` over hardcoding chi values. Omitting `chi` makes
+  the SDK supply `estimate + max(ceil(estimate * 5%), 10)`. A chain caps one
+  transaction at `max_tx_chi` (200,000 chi by default) in every fee mode and
+  rejects a larger `chi_supplied` at CheckTx; the block cap (500,000 by
+  default) counts supplied chi, so oversupplying also shrinks block capacity.
+- On paid networks the balance must cover `chi_supplied / chi_rate`; for a
+  `currency.transfer` the amount plus that reservation must fit the balance.
+- Simulation runs with at most the chain's `max_tx_chi`, so a transaction that
+  needs more fails in simulation rather than after submission.
+- With current `xian-runtime-types`, `str()` of a returned `ContractingDecimal`
+  is plain fixed-point text
+  (`1000`, not `1E+3`) and format specs such as `f"{amount:.2f}"` work.
 - Prefer helper clients (`token()`, `contract()`, `events(...)`,
   `state_key(...)`) and helpers such as `approve(...)` when they fit.
 - Prefer indexed APIs for analytics, explorers, and bots.

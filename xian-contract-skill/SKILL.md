@@ -130,6 +130,9 @@ Transfer({"from": ctx.caller, "to": to, "amount": amount})
   literals such as `1.005` retain their digits. Numeric `/` and decimal
   multiplication truncate toward zero at scale 30. Use
   `quantize(value, places, "half_even")` when settlement calls for ties to even.
+- `str(value)` of a decimal is plain fixed-point text without exponent or
+  trailing fractional zeros (`"1000000"`, `"1.5"`), safe to embed in signed
+  messages.
 - Use `now` for chain time. Do not call wall-clock APIs.
 - On on-demand networks, time advances only when blocks are produced.
 - Use `datetime.timedelta(...)` directly when needed; do not import
@@ -195,6 +198,10 @@ tx = xian.deploy_contract(
 )
 ```
 
+Omit `chi` so the SDK simulates the deployment and adds headroom. An explicit
+`chi` must stay within the chain's per-transaction cap (`max_tx_chi`, 200,000
+chi by default); CheckTx rejects anything larger.
+
 Do not hardcode public RPC endpoints or public chain IDs in examples.
 
 ## Final Checklist
@@ -209,6 +216,8 @@ Before handing back contract code:
 - Check time logic is evaluated during transactions, not assumed to run in the
   background.
 - Check the contract has local tests for success paths and rejected paths.
+- Check every export stays well below the 200,000-chi default per-transaction
+  cap: bounded loops, paginated scans, no whole-`Hash` scans on user paths.
 - Check source-backed deployment examples use `deploy_contract(...)`.
 
 ## Resources
