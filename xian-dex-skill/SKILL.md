@@ -36,7 +36,8 @@ Current DEX surface:
 
 - `con_dex_helper`
   - single-pair `buy(...)` and `sell(...)`
-  - slippage + deadline wrapper for common user flows
+  - signed price bound (`max_input` for a buy, `min_out` for a sell) plus
+    deadline wrapper for common user flows
 
 ## First Rule
 
@@ -153,14 +154,20 @@ expected_out = amounts[-1]
 
 ### Input Needed for a Target Buy
 
+The trade fee depends on the signer (zero-fee traders pay none), so pass the
+trading account. `tokenIn`/`tokenOut` make the result respect each token's
+precision grid; without them the full 30-digit grid is used.
+
 ```python
-fee_bps = xian.call("con_dex", "getTradeFeeBps", {})
+fee_bps = xian.call("con_dex", "getTradeFeeBps", {"account": wallet.public_key})
 reserve_in, reserve_out = (reserve0, reserve1) if token0 == "currency" else (reserve1, reserve0)
 input_needed = xian.call("con_dex", "getAmountIn", {
     "amountOut": 50,
     "reserveIn": reserve_in,
     "reserveOut": reserve_out,
     "feeBps": fee_bps,
+    "tokenIn": "currency",
+    "tokenOut": "con_my_token",
 })
 ```
 
@@ -195,9 +202,27 @@ xian.approve(
 
 ## Single-Pair Buy / Sell with `con_dex_helper`
 
+The helper trades one direct pair. The signer fixes the price bound at signing
+time: `buy` takes `max_input` (the most of `sell_token` you will pay for exactly
+`amount` of `buy_token`), `sell` takes `min_out` (the least `buy_token` you
+accept for `amount` of `sell_token`). Both bounds must be positive; a reserve
+change before execution can only make the trade revert. Derive the bound from a
+fresh quote and the user's slippage tolerance, rounded against the user, and
+approve the helper for at least the amount it pulls (`max_input` for a buy,
+`amount` for a sell).
+
 ### Buy
 
 ```python
+from decimal import Decimal, ROUND_CEILING, localcontext
+
+# input_needed from the getAmountIn quote above, 1% slippage, 6-place sell token
+with localcontext() as ctx:
+    ctx.prec = 100  # V2 values can have 91 significant digits
+    max_input = (Decimal(str(input_needed)) * Decimal("1.01")).quantize(
+        Decimal("0.000001"), rounding=ROUND_CEILING
+    )
+
 tx = xian.send_tx(
     contract="con_dex_helper",
     function="buy",
@@ -205,7 +230,7 @@ tx = xian.send_tx(
         "buy_token": "con_my_token",
         "sell_token": "currency",
         "amount": 50,
-        "slippage": 1,
+        "max_input": max_input,
         "deadline": deadline(5),
     },
     mode="commit",
@@ -215,6 +240,19 @@ tx = xian.send_tx(
 ### Sell
 
 ```python
+from decimal import Decimal, ROUND_FLOOR, localcontext
+
+quoted = xian.call("con_dex", "getAmountsOut", {
+    "amountIn": 25,
+    "src": "con_my_token",
+    "path": [pair_id],
+})
+with localcontext() as ctx:
+    ctx.prec = 100
+    min_out = (Decimal(str(quoted[-1])) * Decimal("0.99")).quantize(
+        Decimal("0.000001"), rounding=ROUND_FLOOR
+    )
+
 tx = xian.send_tx(
     contract="con_dex_helper",
     function="sell",
@@ -222,12 +260,16 @@ tx = xian.send_tx(
         "sell_token": "con_my_token",
         "buy_token": "currency",
         "amount": 25,
-        "slippage": 1,
+        "min_out": min_out,
         "deadline": deadline(5),
     },
     mode="commit",
 )
 ```
+
+`getAmountsOut` applies the fee tier of the simulated signer, which `xian.call`
+takes from the client's wallet. Quote with the same wallet that signs the
+trade.
 
 ## Direct Router Swaps
 
@@ -370,8 +412,9 @@ pair_created = xian.list_events("con_pairs", "PairCreated", limit=25)
 router_events = xian.list_events("con_dex", "ZeroFeeTraderUpdated", limit=25)
 ```
 
-For restart-safe consumers, store the last processed `event_id` and use
-`after_id=...` on the next poll.
+For restart-safe consumers, store the last processed event's `id` (the SDK's
+`IndexedEvent.id`, the BDS event id) and pass it as `after_id=...` on the next
+poll. MCP `dex_list_events` returns the same cursor as `next_after_id`.
 
 For a bounded low-latency wait, `dex_wait_live_event(contract, event, ...)`
 subscribes directly to finalized CometBFT transaction events and does not need
@@ -382,7 +425,7 @@ cursor. Recover with `dex_list_events(after_id=...)` when BDS is available.
 
 ## Common Failure Cases
 
-Current DEX assertions use `SNAKX:*` messages. Expect errors such as:
+Router and pair assertions use `SNAKX:*` messages. Expect errors such as:
 
 - `SNAKX: EXPIRED`
 - `SNAKX: INVALID_PATH`
@@ -390,13 +433,17 @@ Current DEX assertions use `SNAKX:*` messages. Expect errors such as:
 - `SNAKX: INSUFFICIENT_OUTPUT_AMOUNT`
 - `SNAKX: INSUFFICIENT_LIQUIDITY`
 
+`con_dex_helper` checks its own inputs first, with plain messages such as
+`Trade deadline has expired`, `Pair does not exist` and
+`Required input ... exceeds max_input ...`.
+
 Treat them as normal routing/market validation failures, not transport errors.
 
 ## Autonomous Agent Pattern
 
 The clean autonomous posture is a hybrid live-plus-recovery loop:
 
-1. persist the last processed BDS `event_id` when durable recovery is required
+1. persist the last processed BDS event `id` when durable recovery is required
 2. use `dex_wait_live_event` for immediate finalized notifications
 3. calculate the trade off-chain
 4. approve and execute the trade
