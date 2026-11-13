@@ -296,7 +296,10 @@ For contract events, prefer indexed polling with `list_events(...)` and an
 - Prefer `mode="checktx", wait_for_tx=True` or `mode="commit"` for writes that
   feed a later step.
 - Prefer `estimate_chi(...)` over hardcoding chi values. Omitting `chi` makes
-  the SDK supply `estimate + max(ceil(estimate * 5%), 10)`. A chain caps one
+  the SDK supply exactly the simulated chi (`estimate_chi(...)["estimated"]`),
+  with no headroom; execution charges that for the same state. A transaction
+  whose state changed after the estimate can fail with `Out of chi.`;
+  estimate again and resubmit. A chain caps one
   transaction at `max_tx_chi` (200,000 chi by default) in every fee mode and
   rejects a larger `chi_supplied` at CheckTx; the block cap (500,000 by
   default) counts supplied chi, so oversupplying also shrinks block capacity.

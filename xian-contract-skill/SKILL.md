@@ -201,7 +201,8 @@ tx = xian.deploy_contract(
 )
 ```
 
-Omit `chi` so the SDK simulates the deployment and adds headroom. An explicit
+Omit `chi` so the SDK simulates the deployment and supplies exactly the
+simulated chi. An explicit
 `chi` must stay within the chain's per-transaction cap (`max_tx_chi`, 200,000
 chi by default); CheckTx rejects anything larger.
 
