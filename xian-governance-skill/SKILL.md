@@ -102,6 +102,18 @@ Neither contract code nor a governed state patch can change the protected
 `__execution_policy` record. The fee policy (`__fee_policy`: fee mode and chi
 caps) is set in genesis and is outside every contract's writable namespace.
 
+A governed state patch may change two node-read settings, each only to a value
+genesis could write (the node refuses any other bundle when it loads it):
+
+- `__fee_policy`: the canonical `tx_fee_mode`/`max_tx_chi`/`max_block_chi`
+  object; never deleted.
+- `__runtime_features.zk`: JSON `true` or `false`. Before enabling, every
+  validator needs the native zk verifier (`xian-tech-abci[zk]`); a node
+  without it halts at the activation block until it is installed. While zk is
+  off, deploys and calls of zk-using contracts (shielded tokens included) fail
+  with ordinary charged receipts and shielded balances stay locked; the chain
+  keeps running. Both take effect from the block after activation.
+
 The backend command surface also exposes the same flow through
 `localnet-protocol-safety` with explicit flags such as:
 

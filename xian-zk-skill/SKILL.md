@@ -62,6 +62,16 @@ Important `xian-zk` surface:
 - `ShieldedRelayTransferProverClient(...)`
 - `payload_discovery_tags(payload_hex)`
 
+## Chain zk Feature
+
+Shielded contracts need the chain's `zk` runtime feature
+(`__runtime_features.zk`). It is set in genesis and governance can switch it on
+or off with a state patch. While it is off, every transaction that deploys or
+calls a zk-using contract fails with an ordinary charged receipt ("the chain zk
+runtime feature is disabled") and simulation reports the same error: do not
+retry, and expect shielded balances to stay locked until it is on again. Every
+validator must run the native zk verifier while it is on.
+
 ## Submission Modes
 
 ### Direct Submission
@@ -144,7 +154,9 @@ make -C /path/to/xian-stack localnet-e2e LOCALNET_E2E_REQUIRE_SHIELDED=1
 ```
 
 The harness runs the shielded-note-token flow and relayer-facing integration
-as phase `15-shielded-note-token` on the `xian_vm_v2` runtime. It needs the
+as phase `15-shielded-note-token` on the `xian_vm_v2` runtime, followed by
+`15-zk-feature-toggle`, which switches the zk feature off and on again with
+governed state patches. It needs the
 native `xian_zk._native` binding in the stack environment. Without
 `LOCALNET_E2E_REQUIRE_SHIELDED=1` a developer run treats that phase as optional
 and may skip it, so check the phase summary; `make release-safety` always

@@ -65,7 +65,7 @@ Xian keeps its application state in `abci_genesis`, not in CometBFT's
 
 | Field | Meaning |
 |-------|---------|
-| `abci_genesis.genesis` | Ordered `{key, value}` state entries: system contracts (`currency`, `validators`, `governance`, `dao`, `rewards`, `chi_cost`, `zk_registry`, ...) and the protected records `__execution_policy`, `__fee_policy` and `__runtime_features.*` |
+| `abci_genesis.genesis` | Ordered `{key, value}` state entries: system contracts (`currency`, `validators`, `governance`, `dao`, `rewards`, `chi_cost`, `zk_registry`, ...) and the node-read records `__execution_policy` (never patchable), `__fee_policy` and `__runtime_features.*` (patchable by governance only to valid values) |
 | `abci_genesis.hash` | State root of those entries (`xian-state-root-v3`) |
 | `app_hash` | The same state root, so CometBFT's first block commits to it |
 | `abci_genesis.origin` | Founder public key and signature over the genesis block (empty when no founder key signed it) |

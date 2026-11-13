@@ -221,6 +221,15 @@ cannot be started with a newer image: start a fresh chain, or replay old
 history with its own pinned image. BDS spools/snapshots and application
 snapshots carry the policy and are rejected across revisions.
 
+The `zk` runtime feature (`__runtime_features.zk`, set in genesis) is chain
+state too. Governance can switch it with a state patch. Before a patch enables
+it, install the native zk verifier
+(`xian-tech-abci[zk]`) on every validator: a node without it halts at the
+activation block (state untouched) and resumes after the install and a
+restart; startup and snapshot import refuse a zk-enabled state on it the same
+way. With zk off, zk contract deploys and calls fail with ordinary receipts and
+the chain keeps running.
+
 Blocks always execute serially. The speculative parallel executor and its
 `parallel_execution_*` settings were removed; a `xian.toml` that still sets
 one of those keys is rejected at startup, and the CLI no longer offers the
