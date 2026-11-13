@@ -155,7 +155,6 @@ the full localnet harnesses as well:
 
 ```bash
 make localnet-e2e
-make localnet-parallel-e2e
 make localnet-node-report
 ```
 

@@ -140,7 +140,6 @@ isolated contract tests:
 
 ```bash
 make -C /path/to/xian-stack localnet-e2e
-make -C /path/to/xian-stack localnet-parallel-e2e
 ```
 
 The regular harness covers the shielded-note-token flow and relayer-facing

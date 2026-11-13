@@ -223,8 +223,6 @@ Runtime tuning that belongs in the profile is also exposed here:
   `--simulation-timeout-ms`, and `--simulation-max-chi` (the node simulates
   with `min(simulation_max_chi, max_tx_chi)`, so this can only lower the
   chain's per-transaction cap)
-- `--parallel-execution-enabled`, `--parallel-execution-workers`, and
-  `--parallel-execution-min-transactions`
 - `--block-policy-mode` and `--block-policy-interval`
 - `--app-log-level`, `--app-log-json`, `--app-log-rotation-hours`, and
   `--app-log-retention-days`
@@ -324,14 +322,13 @@ For product-level validation, use the heavier harnesses:
 
 ```bash
 make localnet-e2e
-make localnet-parallel-e2e
 make localnet-node-report
 make localnet-protocol-safety
 ```
 
-`localnet-e2e` and `localnet-parallel-e2e` are stronger signals than "five nodes
-started" because they exercise contracts, indexing, governance, restart
-convergence, and runtime-report behavior.
+`localnet-e2e` is a stronger signal than "five nodes started" because it
+exercises contracts, indexing, governance, restart convergence, and
+runtime-report behavior.
 
 ## Operational Guidance
 
