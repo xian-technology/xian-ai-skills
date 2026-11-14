@@ -173,6 +173,9 @@ handle them like production credentials.
   is one. For generic Python SDK arguments use values such as
   `[Decimal("0.7"), 0, 0, Decimal("0.3")]` with `from decimal import Decimal`.
   A generic JSON tool must encode each decimal as a `__fixed__` wrapper.
+- fee rewards conserve value: shares are truncated `ContractingDecimal`
+  amounts that never exceed the charged fee (`chi_used / chi_rate`); the burn
+  share and the truncation dust are burned
 - when changing operator lifecycle behavior, check that `xian node status`
   still reports a coherent local/runtime/live picture
 - when changing governance state patches, validate approval, scheduling, and
