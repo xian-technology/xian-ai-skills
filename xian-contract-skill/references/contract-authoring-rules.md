@@ -274,7 +274,9 @@ Integers have magnitude below 2^512. Decimals have magnitude below 10^61
 and at most 30 fractional places. Decimal multiplication and numeric `/`
 truncate toward zero at 30 places. Integer `//` rounds down. Use `quantize(value,
 places, mode)` with a scale of 0–30 and `floor`, `ceil`, `toward_zero`, or
-`half_even`. The `sqrt` helper floors a square root to the decimal grid.
+`half_even`. `round(x)` and `round(x, n)` follow Python (half to even;
+`round(decimal)` is an int, `round(decimal, n)` a decimal, `n` may be
+negative). The `sqrt` helper floors a square root to the decimal grid.
 `mul_div_floor` and `mul_div_ceil` divide an exact integer product by a
 positive integer and apply the named rounding rule. Only integers support
 `//` and `%`. A decimal parameter accepts an exactly representable integer.
@@ -294,7 +296,8 @@ Guidance:
 
 - Do not model token amounts as integer base units unless the product
   specifically needs that.
-- Avoid binary-floating-point assumptions.
+- Avoid binary-floating-point assumptions: contracts have no floats
+  (`float()` is unavailable) and `random.random()` returns a 30-digit decimal.
 - Keep arithmetic explicit and bounded.
 - Validate positive amounts and sufficient balances before writes.
 
@@ -328,6 +331,9 @@ def roll() -> int:
     random.seed()
     return random.randint(1, 6)
 ```
+
+`random.random()` returns a decimal in [0, 1) with 30 fractional digits
+(`randbelow(10**30) / 10**30`), not Python's 53-bit float.
 
 It is deterministic and predictable from public inputs. Do not use it for
 security, lotteries with value, validator selection, or secret generation.

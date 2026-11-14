@@ -132,7 +132,9 @@ Transfer({"from": ctx.caller, "to": to, "amount": amount})
 - Use `int` for counts and `decimal` for fractional amounts. V2 source
   literals such as `1.005` retain their digits. Numeric `/` and decimal
   multiplication truncate toward zero at scale 30. Use
-  `quantize(value, places, "half_even")` when settlement calls for ties to even.
+  `quantize(value, places, "half_even")` when settlement calls for ties to even;
+  `round(x, n)` follows Python (half to even, `n` may be negative). There are
+  no floats: `random.random()` returns a 30-digit decimal in [0, 1).
 - `str(value)` of a decimal is plain fixed-point text without exponent or
   trailing fractional zeros (`"1000000"`, `"1.5"`), safe to embed in signed
   messages.
