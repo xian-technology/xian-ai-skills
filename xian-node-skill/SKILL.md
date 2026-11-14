@@ -212,7 +212,7 @@ validator `chi_cost_change` vote. In `xian-stack` the genesis inputs are
 Genesis commits `__execution_policy`: execution revision `xvm-execution-14`,
 gas schedule `xvm-gas-6`, bytecode `xvm-2`, set codec `xian-set-1`, contract
 admission `xian-admission-3` and transaction admission
-`xian-fastpath-admission-2`. The node checks that exact record in genesis, in
+`xian-fastpath-admission-3`. The node checks that exact record in genesis, in
 persisted state and against its native runtime before it bootstraps contracts
 or replaces state, and refuses to start on any mismatch. Each execution
 revision changes transaction results or app hashes (revision 14 also uses state
