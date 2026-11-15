@@ -372,7 +372,7 @@ updates are hash-indexed and do not grow with dictionary size. `Hash.all()`,
 Budget limits: the chain's genesis fee policy caps one transaction at
 `max_tx_chi` (200,000 chi by default) and one block at `max_block_chi`
 (500,000, counted over supplied chi); the VM never runs a V2 transaction past
-1,000,000 chi. Clients supply exactly the simulated chi.
+1,000,000 chi. Clients supply the simulated chi plus a fixed 2-chi margin.
 
 Practical guidance:
 
