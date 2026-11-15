@@ -185,6 +185,17 @@ handle them like production credentials.
 - the minimum self/total bond gates `add_member` in every selection mode, and
   `max_active_set_churn` caps all newcomers per rebalance (filling empty seats
   included); mainnet starts in `manual` mode
+- newcomers add at most `max_new_power_bps` of the power per automatic
+  rebalance (`add_member` is not capped); FinalizeBlock runs the system
+  transaction `validators.record_liveness(absent)` from the decided last
+  commit and jails a validator after `downtime_jail_blocks` consecutive misses
+  (infraction `DOWNTIME`, `downtime_slash_bps`), never during a partition
+  (more than 1/3 of the power absent) and never the last one; the validator
+  lifts a downtime jail with `unjail()` after
+  `downtime_unjail_cooldown_hours`
+- a chain halted by offline power (1/3 or more) restarts from
+  `xian-export-state` + `xian-recovery-genesis --keep ...`, which skips the
+  halted height (see the operator runbook's Halt Recovery)
 - when changing operator lifecycle behavior, check that `xian node status`
   still reports a coherent local/runtime/live picture
 - when changing governance state patches, validate approval, scheduling, and
