@@ -89,9 +89,10 @@ On-chain policy lives in the `xian-configs` system contracts:
   `change_registration_fee`, `chi_cost_change`, `change_types`,
   `update_policy`, `reward_change`, `dao_payout` and `topic_vote`.
   Operators use `register`, `update_registration`, `announce_leave`, `leave`,
-  `bond_self`/`unbond_self`, `delegate`/`undelegate` and `claim_unbond`; reads
-  include `get_active_validators`, `get_validator`, `get_policy_config` and
-  `get_pending_candidates`.
+  `bond_self`/`unbond_self`, `delegate`/`undelegate`, `claim_rewards` and
+  `claim_unbond`; reads include `get_active_validators`, `get_validator`,
+  `get_policy_config`, `get_pending_candidates`, `get_delegation` and
+  `get_pending_rewards`.
 - `governance`: state patches and governed contract calls
   (`propose_state_patch`, `propose_contract_call`, `vote`, `get_patch`,
   `is_patch_approved`).
@@ -176,6 +177,14 @@ handle them like production credentials.
 - fee rewards conserve value: shares are truncated `ContractingDecimal`
   amounts that never exceed the charged fee (`chi_used / chi_rate`); the burn
   share and the truncation dust are burned
+- delegator rewards are lazy (reward per share): a paid transaction credits
+  each active validator's pool (`delegator_pool_reward`, recipient
+  `validators`) and `reward_per_share`; delegators are paid by
+  `claim_rewards` or on any delegation change. Delegations are pool shares
+  (a slash lowers the pool), and a validator exit leaves them in place
+- the minimum self/total bond gates `add_member` in every selection mode, and
+  `max_active_set_churn` caps all newcomers per rebalance (filling empty seats
+  included); mainnet starts in `manual` mode
 - when changing operator lifecycle behavior, check that `xian node status`
   still reports a coherent local/runtime/live picture
 - when changing governance state patches, validate approval, scheduling, and
