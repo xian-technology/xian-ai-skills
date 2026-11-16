@@ -92,10 +92,11 @@ def write_validator_files(out_dir: Path, payload: dict, *, force: bool) -> None:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate Xian validator keys")
+    parser = argparse.ArgumentParser(description="Generate Xian validator keys", allow_abbrev=False)
     parser.add_argument(
-        "--private-key",
-        help="existing 64-character hex validator seed; omit to generate one",
+        "--private-key-file",
+        type=Path,
+        help="file containing an existing 64-character hex seed; omit to generate one",
     )
     parser.add_argument(
         "--out-dir",
@@ -120,7 +121,13 @@ def main():
     )
     args = parser.parse_args()
 
-    payload = build_validator_material(args.private_key)
+    private_key_hex = None
+    if args.private_key_file is not None:
+        try:
+            private_key_hex = args.private_key_file.read_text(encoding="utf-8").strip()
+        except (OSError, UnicodeError):
+            parser.error("Cannot read private key file.")
+    payload = build_validator_material(private_key_hex)
 
     if args.out_dir is not None:
         write_validator_files(args.out_dir, payload, force=args.force)

@@ -10,6 +10,8 @@ repo-era guidance.
 The repo contains skill documentation and small operator helper scripts.
 The validator-key helper creates private output files with mode `0600` on
 POSIX systems and refuses symlink destinations, including with `--force`.
+To reuse a seed, pass `--private-key-file /path/to/private-seed.txt`; keep that
+file private. The seed itself must not be placed in command-line arguments.
 
 ## Skill Consumption Flow
 
