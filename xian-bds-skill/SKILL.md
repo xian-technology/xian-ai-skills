@@ -73,7 +73,7 @@ processed `id` and pass it as `after_id=` on the next `list_events(...)` poll
 for restart-safe consumers.
 
 The BDS database, recovery spool and snapshots are bound to the node's
-execution policy (`xvm-execution-14`, `xvm-gas-6`, `xvm-2`, `xian-set-1`).
+execution policy (`xvm-execution-15`, `xvm-gas-7`, `xvm-2`, `xian-set-1`).
 An index, spool or snapshot from another execution revision is rejected;
 rebuild a fresh index for a new chain instead of relabelling old data.
 

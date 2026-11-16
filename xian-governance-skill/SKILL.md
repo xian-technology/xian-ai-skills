@@ -174,9 +174,11 @@ handle them like production credentials.
   is one. For generic Python SDK arguments use values such as
   `[Decimal("0.7"), 0, 0, Decimal("0.3")]` with `from decimal import Decimal`.
   A generic JSON tool must encode each decimal as a `__fixed__` wrapper.
-- fee rewards conserve value: shares are truncated `ContractingDecimal`
-  amounts that never exceed the charged fee (`chi_used / chi_rate`); the burn
-  share and the truncation dust are burned
+- fee rewards conserve value: the reward split applies to the execution fee;
+  shares are truncated `ContractingDecimal` amounts that never exceed that
+  fee. Half the supplied but unused chi is also charged (rounded down) and
+  burned in addition to the governed burn share and truncation dust. A paid
+  receipt's `chi_used` includes that unused-chi charge
 - delegator rewards are lazy (reward per share): a paid transaction credits
   each active validator's pool (`delegator_pool_reward`, recipient
   `validators`) and `reward_per_share`; delegators are paid by
@@ -185,6 +187,9 @@ handle them like production credentials.
 - the minimum self/total bond gates `add_member` in every selection mode, and
   `max_active_set_churn` caps all newcomers per rebalance (filling empty seats
   included); mainnet starts in `manual` mode
+- active validators and registered candidates share a fixed pool of at most
+  64 accounts, and `max_validators` accepts 1–64. An exited account must pay
+  for a fresh registration before returning, even after lifting a downtime jail
 - newcomers add at most `max_new_power_bps` of the power per automatic
   rebalance (`add_member` is not capped); FinalizeBlock runs the system
   transaction `validators.record_liveness(absent)` from the decided last
