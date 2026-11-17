@@ -1,126 +1,141 @@
 ---
 name: xian-release-skill
-description: Plan, validate, and create Xian workspace releases across sibling repos. Use when asked to decide whether Xian repos need new GitHub/PyPI/npm/GHCR releases, fix release-blocking validations, update dependent packages to newly released versions, or run the coordinated release order without beta/prerelease versioning unless explicitly requested.
+description: Plan, publish, verify, and recover coordinated Xian package and container releases across sibling repos, including dependency pins and immutable release sources.
 ---
 
 # Xian Release Skill
 
-Use this skill for release work in the local Xian sibling-repo workspace. Start
-from `xian-meta/docs/WORKSPACE.md`, `xian-meta/workspace-repos.json`,
-`xian-meta/docs/REPO_CONVENTIONS.md`, and `xian-meta/docs/CHANGE_WORKFLOW.md`,
-then read each edited repo's `AGENTS.md` and `README.md`.
+Start with `xian-meta/docs/WORKSPACE.md`, `workspace-repos.json`,
+`docs/REPO_CONVENTIONS.md`, and `docs/CHANGE_WORKFLOW.md`, then each edited
+repo's `AGENTS.md` and `README.md`. This is a sibling-repo workspace, not a
+monorepo. Keep local defaults and draft network status intact. `xian-intentkit`
+is an exempt upstream fork; include it only for explicitly requested fork work.
+A request to plan or assess releases does not authorize publishing them.
 
-Do not treat the workspace as a monorepo. Keep changes inside the owning repo,
-respect dirty worktrees, and do not modify `xian-intentkit` unless the user
-explicitly asks for fork-specific work there.
+## Discover and freeze the train
 
-## Default Release Path
-
-Use the stable release flow by default. Do not pass `--beta` or another
-prerelease channel unless the user explicitly requests a prerelease.
-
-Run it from the `xian-stack` checkout inside the sibling workspace; it finds
-the other repos next to it:
+Use stable versions unless the user requests a prerelease. From `xian-stack`:
 
 ```bash
-cd xian-stack
-python3 ./scripts/release_orchestrator.py plan
-python3 ./scripts/release_orchestrator.py apply
+python3 scripts/release_orchestrator.py plan
 ```
 
-The orchestrator is the preferred path for repos it models because it:
+The orchestrator models the shared contracting packages, SDKs, ABCI, CLI,
+linter, browser wallet and stack. Inspect other repos' actual workflows as
+well: mobile wallet, contracting hub, DEX, DEX automation and MCP server have
+independent release flows. Do not infer release support from a version field
+or invent a publishing destination. Private packages and source-only crates
+may deliberately have no registry release.
 
-- compares release units against their latest matching tag on `origin/main`
-- plans releases in dependency order
-- applies stable semver bumps when source files are not already prebumped
-- updates dependent package versions where the release contract requires it
-- blocks `apply` if required repos are dirty, off `main`, ahead/behind, missing
-  GitHub checks, or have pending/failed GitHub checks on the exact release refs
+Record the intended units, versions, immutable source SHAs, dependency edges,
+tag names and publishing destinations in a repo-local release ledger. Track
+per-destination completion and workflow URLs there as work proceeds. This lets
+a resumed run distinguish planned, tagged, published and failed units without
+creating another version for work already released.
 
-## Release Order
+Choose patch/minor/major from the public changes since the matching unit tag.
+Use an appropriate pre-bumped source version when present. Check package-specific
+tag prefixes; the greatest semver tag in a multi-package or historical repo
+need not be the current release line. Avoid `--force-all` when resuming a train.
 
-Release dependency providers before consumers:
+Before pushing tags, inspect build matrices, toolchains, registry credentials/
+trusted-publisher setup and available disk. Verify questionable runner labels
+against current GitHub runner documentation; ordinary main CI may not exercise
+all release platforms. See [recovery and handoff](references/recovery-and-handoff.md)
+when a platform or publishing step fails.
 
-1. `xian-contracting` shared packages:
-   `accounts-vX.Y.Z`, `runtime-types-vX.Y.Z`, `compiler-core-vX.Y.Z`,
-   `vm-core-vX.Y.Z`, `zk-vX.Y.Z`
-2. `xian-contracting`: `contracting-vX.Y.Z`
-3. `xian-py`: `vX.Y.Z`
-4. `xian-abci`: `vX.Y.Z`
-5. `xian-cli`: `vX.Y.Z`
-6. `xian-linter`: `vX.Y.Z`
-7. `xian-js`: `vX.Y.Z`
-8. `xian-wallet-browser`: `vX.Y.Z`
-9. independent apps, when their own repo changed:
-   `xian-wallet-mobile`, `xian-contracting-hub-web`
-10. `xian-stack`: `vX.Y.Z`
+## Prepare, validate, then tag
 
-`xian-wallet-browser` rolls after `xian-js`. `xian-stack` rolls last because
-its release manifest pins component refs. `xian-wallet-mobile` and
-`xian-contracting-hub-web` have independent tag-driven GitHub Release
-workflows and should still wait for their own `main` validations before tags.
+The orchestrator is the preferred tagging tool, but inspect its current
+implementation before `apply`. It currently checks input refs **before**
+creating metadata commits and does not wait for the new commits' CI or for
+registry publication. An initial green check is not sufficient for a version
+commit that `apply` would create afterward.
 
-`xian-intentkit` is deliberately fork-managed and outside the coordinated
-orchestrator. Upstream IntentKit keeps `pyproject.toml` at `0.0.0` and injects
-the release version during GitHub Release CI. Do not normalize that metadata in
-the fork just to satisfy Xian release tooling; release the fork through its
-repo-local GitHub Release flow when it has fork-specific changes.
+1. Prepare version metadata, required dependency changes and lockfiles first.
+   Use existing sync helpers or edit the owning files; do not assume a `prepare`
+   CLI subcommand exists. Align Python, Cargo, npm, extension/Expo/Android
+   versions and build numbers where the repo's release contract requires them.
+2. Validate each affected repo, commit and push the preparation changes.
+3. Wait for required validations on the **exact commit to be tagged**. Require
+   clean `main` matching `origin/main` for a new release. Missing or pending
+   checks block tagging. Use the latest applicable attempt of each required
+   validation; retain failed publication attempts as recovery history.
+4. Recheck the selected plan against the ledger. Apply only ready units using
+   the orchestrator's supported selection controls (currently `--skip-unit`).
+   All metadata synchronization for those units must already be a no-op;
+   otherwise prepare the changes and validate their new SHA before tagging.
+5. Record tag SHAs and publishing workflow URLs. A pushed tag starts a release;
+   it does not prove that its packages were published.
 
-## Validation Gate
-
-Never create or push a release tag for a failed ref. Before tagging:
-
-1. Fetch origin and tags.
-2. Confirm the repo is on clean `main` and matches `origin/main`.
-3. Check GitHub validation on the exact SHA to be tagged.
-4. Fix failing validations, push the fix to `main`, and wait for green checks.
-5. Re-run the release plan after checks are green.
-
-For repos outside the orchestrator, inspect checks directly:
+Inspect checks when needed:
 
 ```bash
-gh run list --repo xian-technology/<repo> --branch main --limit 10
 gh api "repos/xian-technology/<repo>/commits/<sha>/check-runs?per_page=100"
+gh run list --repo xian-technology/<repo> --limit 10
 ```
 
-Treat missing, queued, in-progress, cancelled, timed-out, or failed check runs
-as release blockers.
+Do not move an existing release tag to repair CI. Fix the relevant cause and
+use an immutable-tag backfill when supported; see the recovery reference.
 
-## Versioning
+## Publish in dependency order
 
-Choose the next stable semver version from the changes since the previous
-release:
+Use the actual dependency graph, including extras and build inputs. The usual
+order is shared contracting packages → contracting → Python SDK/ABCI/linter/JS
+SDK → CLI/wallets/apps → stack. Independent ready units can run concurrently;
+a consumer must wait for its required provider artifacts, not just their tags.
+For example, a compiler release is not complete when npm succeeds but its
+Python wheel publication fails.
 
-- patch: fixes, CI/release-flow repairs, dependency pin corrections, compatible
-  documentation or packaging corrections
-- minor: compatible public API or user-facing feature additions
-- major: breaking public API, runtime, wire-format, or operator workflow changes
+| Repo or unit | Publishing surface |
+| --- | --- |
+| Contracting accounts/runtime-types/compiler-core/VM/zk/root | Separate PyPI packages and tag prefixes; compiler also publishes npm |
+| Python SDK, ABCI, CLI, linter | PyPI and GitHub releases |
+| JS SDK | Coordinated `@xian-tech/*` npm packages and GitHub release |
+| Browser wallet | `@xian-tech/wallet-core` npm package and extension assets |
+| Mobile, contracting hub, DEX, automation, MCP server | Their existing GitHub release assets; inspect workflows for precise formats |
+| Stack | Container images and release evidence; run last |
 
-If a repo already contains the correct stable source version on `main`, use it.
-Otherwise bump conservatively. Do not add `-beta` just because a previous
-release used beta versioning.
+Consumers may be prepared and tested against sibling sources while providers
+build. Publish them only after the provider versions required by their supported
+install paths are available. Recheck any standalone install path after publication.
 
-## Dependencies After Release
+## Keep pins coherent
 
-After a provider release publishes successfully, update consumers that pin or
-range-depend on that provider when the new release is required for their build,
-tests, runtime behavior, or packaging. Validate the consumer before releasing it.
+- Update direct requirements when the new provider is required, and regenerate
+  locks for changed sibling metadata. Check other affected repos even when they
+  do not publish; stale local-package versions break locked installs there too.
+- Keep published extras split correctly, such as SDK compile/eth/hd and runtime
+  zk extras. Do not let a sibling checkout hide a missing registry dependency.
+- Resolve release manifests and workflow checkouts to immutable **released
+  source** commits. A later infrastructure-only fix on `main` need not change
+  the source used for an existing tag. Do not blindly replace pins with latest
+  `main` during recovery.
+- After the relevant registry release works, remove temporary source overrides
+  only where they were a bridge to that release; refresh locks and standalone
+  tests, README instructions and Docker references together. Preserve deliberate
+  historical pins, especially migration tooling, and the exempt fork.
+- Refresh stack component refs and localnet product/CLI pins after the selected
+  source commits are final. Review embedded network release manifests and the
+  release hygiene in `MAINNET_LAUNCH_PLAN.md`; updating pins does not authorize
+  a public-network launch or changing local defaults.
 
-Common dependencies:
+## Verify and hand off
 
-- `xian-wallet-browser` consumes `xian-js`
-- `xian-stack` pins `xian-abci`, `xian-configs`, `xian-contracting`, and
-  `xian-py` refs in `release-manifest.json`
-- `xian-intentkit` is an optional sidecar attached by stack/CLI integration,
-  but its upstream fork release flow remains separate from the coordinated
-  stack/package release path
-- Python packages using `xian-tech-contracting`, `xian-tech-py`, or related
-  workspace packages may need `pyproject.toml`, lockfile, and test updates
-- npm consumers may need `package.json` and lockfile updates
+Check publishing workflow results and actual destinations: PyPI version JSON
+and distributions, npm version metadata/dist-tags, or GitHub asset names and
+checksums as appropriate. Smoke-test an affected standalone install without
+sibling or temporary source overrides, including the relevant extras. Report
+partial publication precisely rather than calling the whole release complete.
 
-## Repos Without Release Flow
+Resolve the stack's final source manifest, validate its exact tag commit, and
+trigger its image release last. When the user asks for a build-only handoff,
+look up the new workflow URL once, give it to them, and do not poll/watch its
+jobs. Do not invent an image digest before publication. Record the pending
+handoff and any investigation checkpoint needed for later work; see
+[recovery and handoff](references/recovery-and-handoff.md).
 
-If a repo has GitHub releases but no tag-driven release workflow, add or fix
-the release flow before creating new tags. If the user explicitly accepts a
-manual release as a temporary exception, still require green GitHub checks,
-stable semver, and a clear GitHub Release tied to an immutable tag.
+A repo without a release workflow needs a supported release path before tagging;
+a manual publishing exception requires explicit user authorization. Do not
+normalize IntentKit's upstream `0.0.0` version: its fork release flow injects
+release metadata independently.

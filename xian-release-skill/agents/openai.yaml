@@ -1,4 +1,4 @@
 interface:
   display_name: "Xian Release"
-  short_description: "Release Xian repos in the validated dependency order."
-  default_prompt: "Plan or create Xian releases only after GitHub validations are green."
+  short_description: "Publish and recover Xian releases with coherent pins."
+  default_prompt: "Use $xian-release-skill to prepare, validate, publish and verify Xian releases with immutable source pins."
