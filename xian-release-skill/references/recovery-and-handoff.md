@@ -27,7 +27,8 @@ SHA and intended versions in the ledger. If the package source itself needs a
 fix, prepare and validate a new version instead.
 
 For an infrastructure-only failure, prefer a documented backfill that runs the
-repaired workflow against the original tag. In `xian-contracting`:
+repaired workflow against the original tag. `xian-contracting` and `xian-abci`
+support this pattern. For example:
 
 ```bash
 gh workflow run release.yml --repo xian-technology/xian-contracting \

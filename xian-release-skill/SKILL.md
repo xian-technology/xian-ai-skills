@@ -38,6 +38,12 @@ Use an appropriate pre-bumped source version when present. Check package-specifi
 tag prefixes; the greatest semver tag in a multi-package or historical repo
 need not be the current release line. Avoid `--force-all` when resuming a train.
 
+Resolve every sibling build/test checkout in release workflows, including refs
+outside `release-manifest.json`, and compare it with the frozen train. Main CI
+may replace pinned refs with matching branches: green main does not validate a
+release using older sibling fixtures. Validate the pinned release input set
+when it differs from the set already tested; repair stale refs before tagging.
+
 Before pushing tags, inspect build matrices, toolchains, registry credentials/
 trusted-publisher setup and available disk. Verify questionable runner labels
 against current GitHub runner documentation; ordinary main CI may not exercise
