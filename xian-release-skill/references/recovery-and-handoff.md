@@ -59,10 +59,15 @@ Useful probes, after selecting the correct versions and package names:
 
 ```bash
 curl --fail https://pypi.org/pypi/<package>/<version>/json
-npm view '<package>@<version>' version dist.integrity
-npm view '<package>' dist-tags --json
+npm view '<package>@<version>' version dist.integrity --prefer-online
+npm view '<package>' dist-tags --json --prefer-online
 gh release view '<tag>' --repo xian-technology/<repo> --json url,assets
 ```
+
+A successful publish can precede registry processing and cache propagation.
+If a version is temporarily missing, use fresh metadata and allow that processing
+to complete before releasing dependents. Do not republish or bump a version
+merely because a cached lookup returns an older tag or a 404.
 
 Use the repo's release toolchain for install/package smoke tests. Compare the
 expected artifact set with what published, including relevant wheels and extras.
