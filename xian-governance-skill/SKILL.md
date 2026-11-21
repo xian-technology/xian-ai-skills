@@ -75,7 +75,7 @@ make localnet-protocol-safety
 ```
 
 This exercises a real 5-validator localnet whose genesis comes from the
-`testnet` contract bundle in `xian-configs`
+`local` contract bundle in `xian-configs`
 (`LOCALNET_PROTOCOL_SAFETY_GENESIS_NETWORK`).
 
 ## Contract Surface

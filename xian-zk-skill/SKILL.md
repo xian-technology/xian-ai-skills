@@ -96,7 +96,7 @@ standalone ad hoc process:
 xian network join shielded-node \
   --network private-net \
   --network-manifest /path/to/private-net/manifest.json \
-  --template single-node-indexed \
+  --template validator \
   --enable-bds \
   --enable-shielded-relayer \
   --init-node

@@ -12,11 +12,11 @@ operator artifacts, `xian node init` materializes the CometBFT home, and
 `xian-stack`. `xian setup node` is the interactive (or `--plan`/`--yes`)
 wrapper around the same steps.
 
-There is no active public testnet or mainnet for the current codebase. The
-checked-in `testnet` and `mainnet` manifests in `xian-configs` are presets and
-launch-rehearsal assets; their registry images are older V1-era builds, not a
-release of the current V2 runtime. Real networks are operator-managed: join
-them from the coordinator's accepted manifest with `--network-manifest`.
+There is no active public network for the current codebase. The checked-in
+`mainnet` manifest in `xian-configs` is a draft launch-rehearsal recipe that
+builds the node locally; it is not a live network. Real networks are
+operator-managed: join them from the coordinator's accepted manifest with
+`--network-manifest`.
 
 Important packaging detail:
 
@@ -67,7 +67,7 @@ xian keys validator generate --out-dir ./keys/validator-1
 xian network join validator-1 \
   --network private-net \
   --network-manifest /path/to/private-net/manifest.json \
-  --template consortium-5 \
+  --template validator \
   --moniker "validator-1" \
   --validator-key-ref ./keys/validator-1/validator_key_info.json \
   --init-node
@@ -86,8 +86,8 @@ xian node stop validator-1
 `--network` names the network; `--network-manifest` points at the accepted
 manifest and overrides local and canonical lookup. Without it the CLI resolves
 `./networks/<name>/manifest.json` and then the `xian-configs` checkout
-(`local`, `devnet`, `testnet`, `mainnet`). Do not treat the checked-in
-`testnet` or `mainnet` manifest as a live network, make it a public default, or
+(`local`, `mainnet`). Do not treat the checked-in `mainnet` manifest as a
+live network, make it a public default, or
 add public endpoints unless an accepted launch manifest and launch gates
 explicitly say to do so.
 
@@ -106,7 +106,7 @@ xian keys validator generate --out-dir ./keys/validator-1
 xian network join validator-1 \
   --network private-net \
   --network-manifest /path/to/private-net/manifest.json \
-  --template consortium-5 \
+  --template validator \
   --moniker "validator-1" \
   --validator-key-ref ./keys/validator-1/validator_key_info.json \
   --stack-dir ../xian-stack \
@@ -123,7 +123,7 @@ xian node endpoints validator-1
 xian network join bds-1 \
   --network private-net \
   --network-manifest /path/to/private-net/manifest.json \
-  --template single-node-indexed \
+  --template validator \
   --moniker "bds-1" \
   --enable-bds \
   --enable-dashboard \
@@ -142,7 +142,7 @@ snapshot explicitly or rely on one in the manifest/profile:
 xian network join validator-1 \
   --network private-net \
   --network-manifest /path/to/private-net/manifest.json \
-  --template consortium-5 \
+  --template validator \
   --validator-key-ref ./keys/validator-1/validator_key_info.json \
   --snapshot-url https://example.invalid/xian-snapshot.tar.gz \
   --snapshot-signing-key REPLACE_WITH_TRUSTED_ED25519_PUBLIC_KEY \
@@ -159,7 +159,7 @@ published canonical image.
 xian network join dev-validator \
   --network private-net \
   --network-manifest /path/to/private-net/manifest.json \
-  --template consortium-5 \
+  --template validator \
   --moniker "dev-validator" \
   --node-image-mode local_build \
   --generate-validator-key \
@@ -190,8 +190,9 @@ xian node status localnet-1
 Use `xian network create` when you need a new private network definition rather
 than joining an existing one. `single-node-dev` enables BDS, read-only
 GraphQL/GraphiQL, the dashboard, Prometheus and Grafana, with five-second
-periodic blocks; `single-node-indexed` is the same service set with on-demand
-blocks; `consortium-5` is a five-validator shared-network shape.
+periodic blocks. `validator` is the lean shared-network shape: the node plus
+monitoring, every port on loopback; add `--enable-bds`, `--enable-dashboard`
+and other layers per node.
 
 The chain fee policy is chosen here and nowhere else. `__fee_policy` holds
 `tx_fee_mode`, `max_tx_chi` and `max_block_chi` in every fee mode (defaults
@@ -254,7 +255,7 @@ Example:
 xian network join agent-node \
   --network private-net \
   --network-manifest /path/to/private-net/manifest.json \
-  --template single-node-indexed \
+  --template validator \
   --enable-bds \
   --enable-dashboard \
   --enable-monitoring \
