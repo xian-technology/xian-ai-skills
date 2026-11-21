@@ -135,8 +135,10 @@ xian node start bds-1
 xian node health bds-1
 ```
 
-If a profile should bootstrap from a signed or trusted snapshot, pass the
-snapshot explicitly or rely on one in the manifest/profile:
+Bootstrap by replaying blocks from genesis or restoring a verified full
+node-store snapshot containing both Xian application state and CometBFT
+consensus stores. Leave CometBFT peer state sync disabled. To restore a
+snapshot, pass it explicitly or use one configured in the manifest/profile:
 
 ```bash
 xian network join validator-1 \
@@ -329,6 +331,21 @@ a local node home (with a pre-recovery backup unless `--skip-backup`).
 
 Only run `snapshot restore` when the effective network/profile has a snapshot
 URL or you pass one explicitly.
+
+## Remote Deployment
+
+Prepare the node home with `xian node init` or `xian network join --init-node`,
+then upload it with the `xian-deploy` playbooks. Point `xian_network_manifest`
+at the accepted network manifest so deployment can check `config/genesis.json`
+against its `genesis_sha256` pin when present.
+
+If remote monitoring is enabled, pin the Stack release's
+`xian-monitoring.tar` asset in the deployment inventory. Set
+`xian_monitoring_bundle_source` to the HTTPS release asset URL or the
+absolute path of a verified local copy on the Ansible controller. Set
+`xian_monitoring_bundle_sha256` to the archive's expected SHA-256 from the
+accepted release. The monitoring bundle pin is independent of the node
+image digest.
 
 ## Direct Stack Backend
 
