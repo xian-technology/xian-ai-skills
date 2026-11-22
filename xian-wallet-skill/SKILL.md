@@ -5,11 +5,13 @@ description: Work with Xian's current browser and mobile wallets. Use when imple
 
 # Xian Wallet Skill
 
-Use this skill for the current Xian wallet products.
+Use this skill for the browser and mobile wallets. For localnet terminal
+transfers and headless submission after user approval, use the
+[Xian Wallet CLI skill](../xian-wallet-cli-skill/SKILL.md).
 
 ## Current Wallet Surface
 
-There are two active wallet surfaces:
+This skill covers two wallet surfaces:
 
 - browser wallet: `xian-wallet-browser`
   - Manifest V3 extension

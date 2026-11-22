@@ -36,6 +36,7 @@ cp -r xian-dex-skill        /path/to/agent/skills/
 cp -r xian-zk-skill         /path/to/agent/skills/
 cp -r xian-bds-skill        /path/to/agent/skills/
 cp -r xian-wallet-skill     /path/to/agent/skills/
+cp -r xian-wallet-cli-skill /path/to/agent/skills/
 cp -r xian-contract-skill   /path/to/agent/skills/
 cp -r xian-governance-skill /path/to/agent/skills/
 cp -r xian-release-skill    /path/to/agent/skills/
@@ -79,6 +80,7 @@ to.
 | [`xian-zk-skill`](./xian-zk-skill/)                         | Work with the current shielded-note privacy stack: deposit / transfer / withdraw, `xian-zk` wallet and proving APIs, relayer and ceremony constraints. |
 | [`xian-bds-skill`](./xian-bds-skill/)                       | Use the indexed BDS read surface correctly: blocks, txs, events, token inventory, DEX candles, `shielded_wallet_history`, BDS snapshot recovery. |
 | [`xian-wallet-skill`](./xian-wallet-skill/)                 | Work with current browser and mobile wallets: provider approvals, wallet-owned swaps, activity, WalletConnect, network settings, shielded backup. |
+| [`xian-wallet-cli-skill`](./xian-wallet-cli-skill/) | Prepare native localnet transfers, request proposal-specific approval, submit headlessly, and recover receipts. |
 | [`xian-contract-skill`](./xian-contract-skill/)             | Write valid Xian smart contracts from a product spec: restricted contract source, storage/events/time/numeric patterns, local tests, and source deploy snippets. |
 | [`xian-governance-skill`](./xian-governance-skill/)         | Work with current validator governance and operator lifecycle: membership, delegation, state-patch, evidence, slashing, and protocol-safety validation. |
 | [`xian-release-skill`](./xian-release-skill/)               | Prepare, validate, publish, verify and recover Xian releases with immutable source pins, dependency updates and image-build handoffs. |
