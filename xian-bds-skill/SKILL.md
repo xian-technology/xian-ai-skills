@@ -39,8 +39,11 @@ Do not use it for:
 
 Use the typed `xian-tech-py` methods rather than hand-rolled GraphQL or raw
 HTTP calls when possible.
-Use DEX candle `market_id` values reported by the indexer, often pair id values;
-do not invent token-pair strings.
+Resolve a token pair through `dex_market_history` in MCP or
+`get_dex_market_history` in the Python SDK with an explicit GraphQL URL.
+Use the returned pair ID for direct candle queries. Pool fills use exact
+decimal amounts and carry transaction and event identifiers. Candle prices
+are token1 per token0.
 
 ```python
 from xian_py import Xian
@@ -56,7 +59,7 @@ shielded = xian.list_shielded_wallet_history("tag-value", limit=100)
 token_contracts = xian.get_token_contracts(limit=20)
 token_balances = xian.get_token_balances("owner_key", include_zero=False)
 shielded_tags = xian.list_shielded_output_tags("tag-value", limit=100)
-dex_candles = xian.list_dex_candles(market_id="7", interval="1m", limit=100)
+candle_page = xian.get_dex_candle_page(market_id="7", interval="1m", limit=100)
 ```
 
 The current Python client decodes V2 contract data recursively, including
@@ -71,6 +74,9 @@ timings.
 Indexed events carry a monotonically increasing `id`. Persist the last
 processed `id` and pass it as `after_id=` on the next `list_events(...)` poll
 for restart-safe consumers.
+When using the MCP `dex_list_events` tool across multiple event sources,
+commit the returned cursor only when `complete` is true. Use
+`candle_page.next_before` as `end` for an older candle page.
 
 The BDS database, recovery spool and snapshots are bound to the node's
 execution policy (`xvm-execution-15`, `xvm-gas-7`, `xvm-2`, `xian-set-1`).
