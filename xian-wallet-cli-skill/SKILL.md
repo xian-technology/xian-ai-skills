@@ -5,9 +5,9 @@ description: Operate Xian's terminal wallet for a user. Use for accounts, balanc
 
 # Xian Wallet CLI
 
-Use the `xian-wallet` executable from the `xian-wallet-cli` sibling repo.
-From the checkout, run `uv run xian-wallet`. For browser or mobile wallet
-implementation, use the Xian Wallet skill.
+Install the `xian-wallet` executable with `uv tool install xian-tech-wallet-cli`.
+From a source checkout, run `uv run xian-wallet`. For browser or mobile
+wallet implementation, use the Xian Wallet skill.
 
 ## Pick the account and network
 
