@@ -70,10 +70,11 @@ Allowed builtins include:
 ```text
 Exception False None True abs all any ascii bin bool bytearray bytes chr dict
 divmod filter format frozenset hex int isinstance issubclass len list map
-max min oct ord pow range reversed set sorted str sum tuple zip
+max min mul_div_ceil mul_div_floor oct ord pow quantize range reversed round
+set sorted sqrt str sum tuple zip
 ```
 
-Treat everything outside that list as unavailable.
+Use the injected names below for the other supported runtime operations.
 
 ## Runtime Names
 
@@ -343,8 +344,8 @@ security, lotteries with value, validator selection, or secret generation.
 
 ## Limits And Metering
 
-Important current limits (execution revision `xvm-execution-14`, gas schedule
-`xvm-gas-6`, contract admission `xian-admission-3`):
+Important current limits (execution revision `xvm-execution-15`, gas schedule
+`xvm-gas-7`, contract admission `xian-admission-4`):
 
 - execution depth (recursion plus cross-contract reentry): 128 frames
 - max hash dimensions: 16
@@ -353,7 +354,8 @@ Important current limits (execution revision `xvm-execution-14`, gas schedule
 - max aggregate write capacity per transaction: 128 KiB
 - max `range(...)` / sequence repetition length: 131,072 entries
 - max binary allocation / string repetition size: 128 KiB
-- no general return-value size cap; return bytes are metered
+- with metering enabled, the entry function's encoded return value must be
+  smaller than 128 KiB
 
 Current byte costs, in raw meter units (1,000 raw units = 1 chi;
 `chi_used = raw // 1000 + 5`):
@@ -361,16 +363,21 @@ Current byte costs, in raw meter units (1,000 raw units = 1 chi;
 - reads: 2 units / byte
 - writes: 25 units / byte
 - transaction bytes: 1 unit / byte
-- return values: 1 unit / byte
+- return values: 25 units / encoded byte
 
 Size-dependent work is element work at 24 raw units per unit (gas schedule
-`xvm-gas-6`): per comparison, per container member copied or allocated, per
+`xvm-gas-7`): per comparison, per container member copied or allocated, per
 node of a value crossing a contract boundary, per 64 bytes of text copied, per
 128 bytes compared, per 8 bytes searched or copied by string operations
 (`find`, `in`, `replace`, `split(sep)`, `join`, slicing) and per 2 bytes of
 per-character work (`upper()`, `isdigit()`, `int(text)`). Dictionary lookups and
 updates are hash-indexed and do not grow with dictionary size. `Hash.all()`,
 `Hash.clear()` and `clone_from` cost 2,560 raw units per scanned entry.
+
+Loading a module's canonical IR charges 2 raw units per byte of its IR and
+storage key before parsing, once per module per transaction. Static imports and
+dynamic loads share the same limits of 512 modules and 16 MiB of aggregate IR,
+including with metering disabled.
 
 Budget limits: the chain's genesis fee policy caps one transaction at
 `max_tx_chi` (200,000 chi by default) and one block at `max_block_chi`

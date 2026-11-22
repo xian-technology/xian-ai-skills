@@ -51,7 +51,7 @@ A generated `config/genesis.json` has these top-level fields:
     "hash": "<STATE_ROOT_HEX>",
     "number": 0,
     "genesis": [
-      {"key": "__execution_policy", "value": {"execution_revision": "xvm-execution-14", "...": "..."}},
+      {"key": "__execution_policy", "value": {"execution_revision": "xvm-execution-15", "gas_schedule": "xvm-gas-7", "...": "..."}},
       {"key": "__fee_policy", "value": {"tx_fee_mode": "paid_metered", "max_tx_chi": 200000, "max_block_chi": 500000}},
       {"key": "currency.balances:<ACCOUNT>", "value": "..."}
     ],

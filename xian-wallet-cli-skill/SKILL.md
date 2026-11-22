@@ -15,6 +15,8 @@ wallet implementation, use the Xian Wallet skill.
   `--network PROFILE`, `--home PATH`, and `--json` before the command.
   The default network is loopback localnet. Verify an explicit profile with
   `xian-wallet --json --network PROFILE network check`.
+- Keep at least one profile once one has been saved. To remove the active
+  profile, select a different saved profile with `network use NAME` first.
 - `account list` and `receive NAME` return public addresses. `balance`,
   `portfolio`, `activity --refresh`, and `incoming` read wallet activity.
   `incoming` scans pages of indexed token events. Follow `next_offset`.
