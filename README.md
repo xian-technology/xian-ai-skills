@@ -78,7 +78,7 @@ to.
 | [`xian-node-skill`](./xian-node-skill/)                     | Operate Xian nodes with the current CLI (`xian-tech-cli`) and stack model: create or join manifest-backed networks, run validators / BDS nodes, respect the genesis fee and execution policies, attach optional relayer, dashboard, monitoring, and automation layers. |
 | [`xian-dex-skill`](./xian-dex-skill/)                       | Work with the current Xian DEX: quote through `con_dex`, single-pair flows via `con_dex_helper`, LP-token-backed liquidity, indexed event reads. |
 | [`xian-zk-skill`](./xian-zk-skill/)                         | Work with the current shielded-note privacy stack: deposit / transfer / withdraw, `xian-zk` wallet and proving APIs, relayer and ceremony constraints. |
-| [`xian-bds-skill`](./xian-bds-skill/)                       | Use the indexed BDS read surface correctly: blocks, txs, events, token inventory, DEX candles, `shielded_wallet_history`, BDS snapshot recovery. |
+| [`xian-bds-skill`](./xian-bds-skill/)                       | Check BDS and PostGraphile availability, query indexed history and DEX markets, sync shielded wallets, and recover the index. |
 | [`xian-wallet-skill`](./xian-wallet-skill/)                 | Work with current browser and mobile wallets: provider approvals, wallet-owned swaps, activity, WalletConnect, network settings, shielded backup. |
 | [`xian-wallet-cli-skill`](./xian-wallet-cli-skill/) | Use the terminal wallet, route exact approvals, enforce agent grants, and recover receipts. |
 | [`xian-contract-skill`](./xian-contract-skill/)             | Write valid Xian smart contracts from a product spec: restricted contract source, storage/events/time/numeric patterns, local tests, and source deploy snippets. |

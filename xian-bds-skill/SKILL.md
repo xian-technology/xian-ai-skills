@@ -1,65 +1,54 @@
 ---
 name: xian-bds
-description: Use Xian's indexed/BDS read and recovery surface correctly. Use when working with indexed blocks, transactions, events, state history, shielded wallet sync, or operator recovery flows.
+description: Use Xian's optional BDS indexed reads and PostGraphile GraphQL. Check availability and freshness, query indexed blocks, transactions, events, state and DEX history, sync shielded wallets, or recover an index.
 ---
 
 # Xian BDS Skill
 
-Use this skill when the task depends on indexed chain data instead of raw
-consensus RPC.
+## Choose a Read Surface
 
-## Core Model
+When enabled, BDS indexes finalized blocks in PostgreSQL for history, event
+replay, token inventory, DEX candles, developer rewards, and shielded wallet
+sync. Indexed ABCI routes require BDS on the queried node. PostGraphile is an
+optional, read-only GraphQL API over that index. Consensus, transaction
+submission, and zk proof verification work without either service.
 
-- BDS is Xian's indexed read layer.
-- Consensus and zk proof verification do not depend on BDS.
-- Explorers, wallet history, event queries, and shielded note rediscovery do
-  depend on BDS or an equivalent indexed recovery feed.
+1. Use CometBFT RPC for node status and direct ABCI state or contract reads for
+   authoritative current values. A caught-up BDS index can still omit
+   system-only state changes.
+2. For indexed ABCI, call `get_bds_status()` (`/bds_status`) on the target RPC.
+   A node with BDS disabled can return `Unknown query path: bds_status`.
+   Check `worker_running`, `height_lag`, `alerts`, and `indexed_height` before
+   relying on freshness. After a write, wait until the index reaches the
+   transaction's finalized block before expecting the indexed record.
+3. Check the GraphQL endpoint independently from the caller's network with a
+   small query against the required schema. A BDS health response alone does
+   not establish GraphQL reachability. If you use a separate indexed endpoint,
+   confirm it serves the same chain.
 
-That means BDS is not consensus-critical, but it is operationally critical for
-wallet-facing availability.
-
-## When To Use It
-
-Use BDS-backed reads for:
-
-- paginated block and transaction history
-- event queries by contract / event name
-- state history and per-tx/per-block state inspection
-- token contract discovery and per-address token balance inventory
-- DEX candle / market-data reads
-- developer reward summaries
-- shielded wallet sync and shielded note rediscovery
-
-Do not use it for:
-
-- basic consensus liveness checks that raw RPC already answers
-- pretending shielded wallets are fully recoverable from seed material alone
+Report unavailable or lagging history explicitly. Treat an empty page as a
+successful result for the data covered by that index. A timeout, an ABCI
+error, or a GraphQL `errors` response provides no evidence that a record is
+absent. An archival RPC source can support index recovery when it retains the
+missing block range.
 
 ## Preferred Client Surface
 
-Use the typed `xian-tech-py` methods rather than hand-rolled GraphQL or raw
-HTTP calls when possible.
-Resolve a token pair through `dex_market_history` in MCP or
-`get_dex_market_history` in the Python SDK with an explicit GraphQL URL.
-Use the returned pair ID for direct candle queries. Pool fills use exact
-decimal amounts and carry transaction and event identifiers. Candle prices
-are token1 per token0.
+Prefer typed `xian-tech-py` methods. After confirming BDS is available on the
+RPC node, use its indexed ABCI reads:
 
 ```python
 from xian_py import Xian
 
-xian = Xian("http://127.0.0.1:26657")
-
-status = xian.get_bds_status()
-blocks = xian.list_blocks(limit=20)
-txs = xian.list_txs_by_sender("sender_key", limit=50)
-events = xian.list_events("con_pairs", "Swap", limit=25)
-history = xian.get_state_history("currency.balances:alice", limit=25)
-shielded = xian.list_shielded_wallet_history("tag-value", limit=100)
-token_contracts = xian.get_token_contracts(limit=20)
-token_balances = xian.get_token_balances("owner_key", include_zero=False)
-shielded_tags = xian.list_shielded_output_tags("tag-value", limit=100)
-candle_page = xian.get_dex_candle_page(market_id="7", interval="1m", limit=100)
+with Xian("http://127.0.0.1:26657") as xian:
+    status = xian.get_bds_status()
+    blocks = xian.list_blocks(limit=20)
+    txs = xian.list_txs_by_sender("sender_key", limit=50)
+    events = xian.list_events("con_pairs", "Swap", limit=25)
+    history = xian.get_state_history("currency.balances:alice", limit=25)
+    token_contracts = xian.get_token_contracts(limit=20)
+    token_balances = xian.get_token_balances("owner_key", include_zero=False)
+    shielded = xian.list_shielded_wallet_history("tag-value", after_note_index=0)
 ```
 
 The current Python client decodes V2 contract data recursively, including
@@ -71,78 +60,87 @@ is `{"__fixed__": "1.5"}` and an integer outside the safe JavaScript range is
 integers with `__big_int__`. BDS operator measurements can include fractional
 timings.
 
-Indexed events carry a monotonically increasing `id`. Persist the last
-processed `id` and pass it as `after_id=` on the next `list_events(...)` poll
-for restart-safe consumers.
-When using the MCP `dex_list_events` tool across multiple event sources,
-commit the returned cursor only when `complete` is true. Use
-`candle_page.next_before` as `end` for an older candle page.
+For resumable event replay, use `list_events(..., after_id=0)` to read in
+ascending order, then persist the last processed numeric event ID for the
+next poll on the same index. Event IDs come from the BDS database, so verify
+cursor continuity before switching or rebuilding the index. The SDK uses
+indexed ABCI first and can fall back to GraphQL for `list_events` and
+`get_events_for_tx`. When using the MCP `dex_list_events` tool across multiple
+event sources, commit the returned cursor only when `complete` is true.
 
-The BDS database, recovery spool and snapshots are bound to the node's
-execution policy (`xvm-execution-15`, `xvm-gas-7`, `xvm-2`, `xian-set-1`).
-An index, spool or snapshot from another execution revision is rejected;
-rebuild a fresh index for a new chain instead of relabelling old data.
+## Optional PostGraphile Endpoint
 
-## BDS Requirement
+Use `xian node endpoints <profile>` for a managed node or get the query URL
+from its operator. The stack defaults to `http://127.0.0.1:5000/graphql`
+when the sidecar is running. `/graphiql` is the browser UI. Publishing the
+endpoint is an operator choice made with `--public-query`.
 
-The indexed surface is meant to be consumed from a node with BDS enabled.
+Set `XIAN_GRAPHQL` for the MCP server or pass the query URL to the Python SDK:
 
-Operator-side posture:
+```python
+from xian_py import Xian, XianClientConfig
 
-- keep at least one indexed node available for wallet-facing services
-- keep at least one archival recovery source or exported BDS snapshot
-- validate snapshot import, not just snapshot export
+config = XianClientConfig(graphql_url="http://127.0.0.1:5000/graphql")
+with Xian("http://127.0.0.1:26657", config=config) as xian:
+    market = xian.get_dex_market_history("currency", "con_example_token", first=25)
+```
 
-## Standard Recovery Commands
+For direct GraphQL, inspect the served schema. PostGraphile v5 uses `id` for
+global IDs and `rowId` for numeric table IDs such as event cursors. Send
+`BigInt` variables as strings. Use bounded connections, for example
+`{ allBlocks(first: 1) { nodes { height } } }`. Public query mode requires
+`first` or `last` on connections and limits offset, depth, and operation
+cost. See `xian-docs-web/api/graphql.md` for query examples and
+`xian-ai-guides/bds_graphql_schema.json` for the published schema snapshot.
 
-`xian-stack` now standardizes BDS snapshot export/import through the backend
-surface:
+## DEX Market History
+
+Resolve a token pair in either order with `get_dex_market_history` in Python
+or `dex_market_history` in MCP. Both use GraphQL. In Python pass `next_after`
+as `after` for older fills and `candles.next_before` as `candle_before` for
+older candles. The two cursors are independent. Each fill has a numeric event
+ID and transaction hash. Amounts are exact decimals, and candle prices are
+token1 per token0. Use current contract reads for live quotes.
+
+If you already have a pair ID, `get_dex_candle_page(market_id=pair_id)` uses
+indexed ABCI and works without GraphQL. Pass `next_before` as `end` for older
+pages, keeping the pair, interval, and any `start` fixed with zero offset.
+Continue until the cursor is null, even when a page is shorter than the limit.
+
+## Index Recovery
+
+Match the database, spool, snapshot, and RPC backfill source to the target
+chain and its execution policy. Pruned RPC history cannot fill missing block
+ranges. Use a compatible snapshot or a source with the required history.
+
+Run the snapshot commands from `xian-stack`. Import replaces the target BDS
+schema. Rehearse in an isolated instance and stop any BDS writer on the target
+database before importing. Keep Postgres and the trusted RPC source available
+for the restore.
 
 ```bash
 uv run python ./scripts/backend.py bds-snapshot-export
 uv run python ./scripts/backend.py bds-snapshot-import
 ```
 
-By default the archive lives under:
+The default archive is `.cometbft/snapshots/xian-bds-snapshot.tar.gz`. After
+restoring, resume the writer and verify that indexed height advances and the
+spool drains. The archive restores indexed PostgreSQL data. Full node recovery
+also needs matching application and consensus stores.
 
-```bash
-.cometbft/snapshots/xian-bds-snapshot.tar.gz
-```
-
-## Shielded Wallet Reality
-
-The important split is:
-
-- zk correctness is on-chain and survives indexer outages
-- shielded wallet recovery needs indexed history or a saved `state_snapshot`
-
-If every BDS node is lost and historical chain data is pruned away, older
-shielded notes may become undiscoverable in practice unless users kept
-`state_snapshot` backups or operators kept usable BDS snapshots / archival
-history.
-
-## Implementation Guidance
-
-- Prefer `shielded_wallet_history` for wallet sync when available.
-- Prefer typed SDK methods for token inventory, shielded tags, and DEX candles
-  instead of hand-building indexer queries.
-- Use lower-level event/tag/tx scans only as compatibility fallback.
-- Version and document wallet-facing indexed read surfaces deliberately.
-- Treat retention of encrypted payload blobs and snapshot export/import as part
-  of the privacy product, not as optional ops polish.
+For shielded wallet sync, prefer `shielded_wallet_history` and resume with
+`after_note_index`. Lower-level event, tag, and transaction scans are
+compatibility fallbacks. Shielded note rediscovery needs indexed history or
+a saved `state_snapshot`. Keep a recoverable source for historical encrypted
+payloads when serving wallet clients on a pruned chain.
 
 ## Validation
 
-Check both the client read path and the operator recovery path:
-
-```bash
-uv run --project /path/to/xian-py pytest -q
-uv run python ./scripts/backend.py bds-snapshot-export
-uv run python ./scripts/backend.py bds-snapshot-import
-```
-
-For cross-repo BDS behavior, prefer `xian-stack` localnet harnesses over
-isolated read tests:
+Exercise the same indexed read against a caught-up index, during lag, and
+with the required service unavailable. Check that basic RPC tasks still work
+with BDS disabled. For GraphQL, check the actual query and its pagination
+against the target schema. For cross-repo BDS and snapshot behavior, use the
+`xian-stack` localnet harness:
 
 ```bash
 make localnet-e2e
